@@ -224,6 +224,44 @@ def build_icm(raw, uc, tmp, out):
     write_csv(allr, out, "icm.csv")
 
 
+# ------------------------------------------------------------------ ICM catch-up clusters: 0/0 and locked houses
+def build_zerolock(raw, uc, tmp, out):
+    """One row per (catch-up cluster, house type). hh_type 1 = 0/0 house, 2 = locked house; finding 1 = matched, 0 = not matched."""
+    rows = []
+    for lab, p in files(raw, "ICM_Catchup_Clusters_*.zip", r"^ICM[_ ]Catchup[_ ]Clusters[_ ]").items():
+        say("Catch-up clusters", lab)
+        d = zip_csv(p, tmp)
+        d["code"] = d["fk_uc_id"].map(clean_code)
+        d = d[d.code.isin(uc.codes)]
+        if "is_archive" in d:
+            d = d[num(d.is_archive).fillna(0) == 0]
+        d["ht"] = num(d.hh_type); d["fi"] = num(d.finding)
+        d = d[d.ht.isin([1, 2]) & d.fi.isin([0, 1])]          # rows with a house and a finding
+        if d.empty:
+            warn(f"Catch-up clusters {lab}: no 0/0 or locked houses for the division's UCs"); continue
+        d["nm"] = (d.fi == 0).astype(int); d["mt"] = 1 - d.nm
+        d["vac"] = num(d.f_vaccinated).fillna(0) * d.nm
+        d["unv"] = num(d.f_un_vaccinated).fillna(0) * d.nm
+        d["mon"] = [monitor_code(e, n) for e, n in zip(d["Surveyor Email"], d.col_surveyor_name)]
+        d["day"] = num(d.g1_dayofwork).fillna(0).astype(int).clip(0, 14).replace(0, "")
+        g = d.groupby(["unique_id", "ht"], sort=False)
+        a = g.agg(mname=("col_surveyor_name", "first"), code=("code", "first"), day=("day", "first"), mon=("mon", "first"), desg=("designation_title", "first"),
+                  hh=("ht", "size"), mt=("mt", "sum"), nm=("nm", "sum"), vac=("vac", "sum"), unv=("unv", "sum")).reset_index()
+        a["cid"] = pd.factorize(a.unique_id)[0] + 1
+        info = a.code.map(lambda c: uc.info(c))
+        a["camp"] = camp_label(d.ActivityName.iloc[0]) if len(d) else lab
+        a["district"] = info.str[0]; a["tehsil"] = info.str[1]; a["uc"] = info.str[2]
+        a["type"] = a.ht.map({1: "0/0", 2: "Locked"})
+        rows.append(a)
+        say(f"   {a.cid.nunique():,} clusters, {int(a.hh.sum()):,} houses, {int(a.nm.sum())} not matched, {a.code.nunique()} UCs")
+    if rows:
+        r = pd.concat(rows, ignore_index=True)
+        r["cid"] = r.camp + "-" + r.cid.astype(str)
+        r = r[["camp", "cid", "district", "tehsil", "uc", "day", "mon", "desg", "type", "hh", "mt", "nm", "vac", "unv", "mname"]]
+        r = r.sort_values(["camp", "district", "tehsil", "uc", "cid"], kind="stable")
+        write_csv(r, out, "zerolock.csv")
+
+
 # ------------------------------------------------------------------ team monitoring
 TM_MAP = [  # position -> raw column(s)
     "g1_team_composition_female", "g1_team_composition_adult", "g1_NamesMP_match", ("g1_valid_marker", "g1_quality_marker"),
@@ -968,7 +1006,7 @@ def main(raw, out):
     uc = UCs(ul)
     say(f"{len(uc.codes)} UCs in the master list")
     with tempfile.TemporaryDirectory() as tmp:
-        for fn, args in [(build_icm, (raw, uc, tmp, out)), (build_team, (raw, uc, tmp, out)), (build_aicmon, (raw, uc, tmp, out)),
+        for fn, args in [(build_icm, (raw, uc, tmp, out)), (build_team, (raw, uc, tmp, out)), (build_aicmon, (raw, uc, tmp, out)), (build_zerolock, (raw, uc, tmp, out)),
                          (build_neap, (raw, uc, out)), (build_mpqa, (raw, uc, out)), (build_aictrain, (raw, uc, out)),
                          (build_teamtrain, (raw, uc, out)), (build_lqas, (raw, uc, out)),
                          (build_pchs, (raw, uc, out)), (build_pcm, (raw, uc, out)), (build_geo, (raw, uc, out))]:
