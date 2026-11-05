@@ -21,7 +21,7 @@ Drop the new round's files in RAW_FOLDER and re-run.  File names it looks for (r
     *.geojson                            UC-wise and district-wise boundaries -> geo.json
 
 The ROUND in each name is e.g. SNID_May_2026  (label shown in the dashboard: "SNID May 2026").
-Only the UCs of Tehsil_File.xlsx are kept.  Monitor identities are anonymised (M-XXXXXX).
+Only the UCs of Tehsil_File.xlsx are kept.  Monitor codes (M-XXXXXX) are kept; ICM and 0/0 files also carry the monitor name as uploaded.
 """
 import os, sys, re, io, glob, json, math, hashlib, base64, zipfile, tempfile, datetime, difflib, warnings
 import numpy as np
@@ -191,7 +191,7 @@ def build_icm(raw, uc, tmp, out):
         a = g.agg(campaign=("ActivityName", "first"), code=("code", "first"), day=("g1_dayofwork", "first"),
                   designation=("designation_title", "first"), org=("org_name", "first"), pop=("g1_popu_type", "first"),
                   lat=("latitude", "first"), lon=("longitude", "first"), email=("Surveyor Email", "first"),
-                  sname=("col_surveyor_name", "first"), hh=("hh_no", "size"),
+                  sname=("col_surveyor_name", "first"), mname=("col_surveyor_name", "first"), hh=("hh_no", "size"),
                   a1=("child_0_11", "sum"), a1c=("child_0_11_vac", "sum"), a2=("child_12_59", "sum"), a2c=("child_12_59_vac", "sum"),
                   nt=("team_miss_house", "sum"), tv=("team_miss_child", "sum"),
                   na=("number_no_response_houses", "max"), ref=("number_dont_want_participate_houses", "max"),
@@ -219,7 +219,8 @@ def build_icm(raw, uc, tmp, out):
         return
     allr = pd.concat(rows, ignore_index=True)
     cols = ["campaign", "district", "tehsil", "uc", "day", "designation", "org", "pop", "lat", "lon", "hh", "a1", "a1c", "a2", "a2c",
-            "nt", "tv", "na", "ref", "g", "gv", "st", "sv", "ri", "vm", "ff", "ma", "pc", "mon", "sd"]
+            "nt", "tv", "na", "ref", "g", "gv", "st", "sv", "ri", "vm", "ff", "ma", "pc", "mon", "sd", "mname"]
+    allr["mname"] = allr.mname.fillna("").astype(str).str.strip()
     allr = allr[cols].sort_values(["campaign", "district", "tehsil", "uc", "day"], kind="stable")
     write_csv(allr, out, "icm.csv")
 
