@@ -950,14 +950,16 @@ MS_LOC = {"hospital": "Hospital", "market": "Market", "bus_stop": "Bus stop", "p
 
 
 def build_ms(raw, uc, tmp, out):
-    """Market survey (children checked for a finger-mark at markets, bus stops, hospitals): one row per site visit, Bannu Division UCs only (archived rows included).
+    """Market survey (children checked for a finger-mark at markets, bus stops, hospitals): one row per site visit, Bannu Division UCs only (archived = mistaken entries, left out).
     missed = checked - finger-marked; the reasons are the five reason columns of the form."""
     rows = []
     for lab, p in files(raw, "Market_Survey*.zip", r"^Market[_ ]Survey[_ ]*").items():
         say("Market survey", lab)
         d = zip_csv(p, tmp)
         d["code"] = d["fk_uc_id"].map(clean_code)
-        d = d[d.code.isin(uc.codes)]     # archived rows are kept: they are real site visits and the division totals include them
+        d = d[d.code.isin(uc.codes)]
+        if "is_archive" in d:                  # archived rows are entries marked as mistaken: left out
+            d = d[num(d.is_archive).fillna(0) == 0]
         for c in ["child_0_59_checked", "child_0_59_marked", "child_0_11_checked", "child_0_11_marked", "child_12_59_checked", "child_12_59_marked",
                   "team_not_visited", "team_missed_child", "child_away", "refusal", "other", "total_missed"]:
             d[c] = num(d[c]).fillna(0) if c in d else 0.0
