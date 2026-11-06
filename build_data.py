@@ -942,6 +942,58 @@ def build_pcm(raw, uc, out):
     write_csv(df, out, "pcm.csv")
 
 
+MS_COLS = ["camp", "district", "tehsil", "uc", "code", "site", "loc", "date", "monitor", "desg", "checked", "fm", "missed",
+           "r_nt", "r_tm", "r_away", "r_ref", "r_oth"]
+MS_DESG = {"UCPO": "UC Polio Officer", "DPO": "District Polio Officer", "TPO_TSA": "TPO / TSA", "TEHSIL_POLIO_OFF": "Tehsil Polio Officer",
+           "N_STOP": "N-STOP Officer", "PEO": "PEO", "UCSP": "UC Support Person", "OTHER": "Other", "DHO": "DHO", "EPI_COORDINATOR": "EPI Coordinator"}
+MS_LOC = {"hospital": "Hospital", "market": "Market", "bus_stop": "Bus stop", "public_place": "Public place"}
+
+
+def build_ms(raw, uc, tmp, out):
+    """Market survey (children checked for a finger-mark at markets, bus stops, hospitals): one row per site visit, Bannu Division UCs only.
+    missed = checked - finger-marked; the reasons are the five reason columns of the form."""
+    rows = []
+    for lab, p in files(raw, "Market_Survey*.zip", r"^Market[_ ]Survey[_ ]*").items():
+        say("Market survey", lab)
+        d = zip_csv(p, tmp)
+        d["code"] = d["fk_uc_id"].map(clean_code)
+        d = d[d.code.isin(uc.codes)]
+        if "is_archive" in d:
+            d = d[num(d.is_archive).fillna(0) == 0]
+        for c in ["child_0_59_checked", "child_0_59_marked", "child_0_11_checked", "child_0_11_marked", "child_12_59_checked", "child_12_59_marked",
+                  "team_not_visited", "team_missed_child", "child_away", "refusal", "other", "total_missed"]:
+            d[c] = num(d[c]).fillna(0) if c in d else 0.0
+        camp = pc_camp(lab)
+        bad = 0
+        for _, r in d.iterrows():
+            ch = int(r.child_0_59_checked + r.child_0_11_checked + r.child_12_59_checked)
+            fm = int(r.child_0_59_marked + r.child_0_11_marked + r.child_12_59_marked)
+            rs = [int(r.team_not_visited), int(r.team_missed_child), int(r.child_away), int(r.refusal), int(r.other)]
+            if ch - fm != sum(rs):
+                bad += 1
+                rs[4] += (ch - fm) - sum(rs)            # anything the form did not explain goes to 'Other'
+                rs[4] = max(rs[4], 0)
+            dd, t, u = uc.info(r.code)
+            dt = pd.to_datetime(r.get("date_conducted"), errors="coerce")
+            desg = str(r.get("designation", "")).strip()
+            rows.append(dict(camp=camp, district=dd, tehsil=t, uc=u, code=r.code,
+                             site=re.sub(r"\s+", " ", str(r.get("survey_loc", "")).strip()),
+                             loc=MS_LOC.get(str(r.get("location_type", "")).strip().lower(), str(r.get("location_type", "")).strip()),
+                             date="" if pd.isna(dt) else dt.strftime("%Y-%m-%d"),
+                             monitor=re.sub(r"\s+", " ", str(r.get("surveyor_name", "")).strip()),
+                             desg=MS_DESG.get(desg.upper(), desg), checked=ch, fm=fm, missed=max(ch - fm, 0),
+                             r_nt=rs[0], r_tm=rs[1], r_away=rs[2], r_ref=rs[3], r_oth=rs[4]))
+        if bad:
+            warn(f"Market survey {lab}: {bad} site rows where children missed did not equal the sum of the reasons (difference put under 'Other')")
+    if not rows:
+        return
+    df = pd.DataFrame(rows)[MS_COLS]
+    df = df[df.checked > 0]
+    for lab, g in df.groupby("camp"):
+        say(f"Market survey {lab}: {len(g)} sites, {g.checked.sum():,} children, FM {g.fm.sum()/g.checked.sum():.1%}")
+    write_csv(df, out, "ms.csv")
+
+
 # ------------------------------------------------------------------ geo
 def build_geo(raw, uc, out):
     from shapely.geometry import shape, mapping
@@ -1015,7 +1067,7 @@ def main(raw, out):
         for fn, args in [(build_icm, (raw, uc, tmp, out)), (build_team, (raw, uc, tmp, out)), (build_aicmon, (raw, uc, tmp, out)), (build_zerolock, (raw, uc, tmp, out)),
                          (build_neap, (raw, uc, out)), (build_mpqa, (raw, uc, out)), (build_aictrain, (raw, uc, out)),
                          (build_teamtrain, (raw, uc, out)), (build_lqas, (raw, uc, out)),
-                         (build_pchs, (raw, uc, out)), (build_pcm, (raw, uc, out)), (build_geo, (raw, uc, out))]:
+                         (build_pchs, (raw, uc, out)), (build_pcm, (raw, uc, out)), (build_ms, (raw, uc, tmp, out)), (build_geo, (raw, uc, out))]:
             try:
                 fn(*args)
             except Exception as e:      # one broken file must not stop the others
