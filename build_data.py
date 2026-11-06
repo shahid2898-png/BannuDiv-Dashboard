@@ -181,12 +181,17 @@ def build_icm(raw, uc, tmp, out):
             d = d[num(d.is_archive).fillna(0) == 0]
         for c in ["child_0_11", "child_0_11_vac", "child_12_59", "child_12_59_vac", "team_miss_house", "team_miss_child",
                   "number_no_response_houses", "number_dont_want_participate_houses", "guest", "guest_vac", "total_seen",
-                  "total_finger_mark", "rutine_epi", "no_vacc_monitor", "notv_fm", "child_0_59", "child_0_59_vac"]:
+                  "total_finger_mark", "rutine_epi", "no_vacc_monitor", "notv_fm", "child_0_59", "child_0_59_vac", "child_away"]:
             d[c] = num(d[c]).fillna(0) if c in d else 0.0
         # newer forms record one 0-59 month figure (no 0-11 / 12-59 split): it goes in the "12-59" slot, as in the Peshawar file
         d["child_12_59"] = d["child_12_59"] + d["child_0_59"]
         d["child_12_59_vac"] = d["child_12_59_vac"] + d["child_0_59_vac"]
         d["latitude"] = num(d.latitude); d["longitude"] = num(d.longitude)
+        # missed children by reason, all in CHILDREN so that NT + TVBMC + NA + Refusals = total missed:
+        # NA = children away (child_away); refusals = what is left of (checked - vaccinated) after NT, TVBMC and NA
+        d["na_ch"] = d["child_away"]
+        d["ref_ch"] = ((d.child_12_59 + d.child_0_11) - (d.child_12_59_vac + d.child_0_11_vac)
+                       - d.team_miss_house - d.team_miss_child - d.na_ch).clip(lower=0)
         g = d.groupby("unique_id")
         a = g.agg(campaign=("ActivityName", "first"), code=("code", "first"), day=("g1_dayofwork", "first"),
                   designation=("designation_title", "first"), org=("org_name", "first"), pop=("g1_popu_type", "first"),
@@ -194,7 +199,7 @@ def build_icm(raw, uc, tmp, out):
                   sname=("col_surveyor_name", "first"), mname=("col_surveyor_name", "first"), hh=("hh_no", "size"),
                   a1=("child_0_11", "sum"), a1c=("child_0_11_vac", "sum"), a2=("child_12_59", "sum"), a2c=("child_12_59_vac", "sum"),
                   nt=("team_miss_house", "sum"), tv=("team_miss_child", "sum"),
-                  na=("number_no_response_houses", "max"), ref=("number_dont_want_participate_houses", "max"),
+                  na=("na_ch", "sum"), ref=("ref_ch", "sum"),
                   g=("guest", "sum"), gv=("guest_vac", "sum"), st=("total_seen", "sum"), sv=("total_finger_mark", "sum"),
                   ri=("rutine_epi", "sum"), vm=("no_vacc_monitor", "sum"), ff=("notv_fm", "sum")).reset_index(drop=True)
         a["campaign"] = camp_label(a.campaign.iloc[0]) if len(a) else lab
