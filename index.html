@@ -153,12 +153,12 @@ aside.rail .rail-foot b{color:#1f2937}
   <div class="msp" hidden>${i.length>10?`<input class="inp ms-q" type="search" placeholder="Search ${t.toLowerCase()}\u2026" aria-label="Search">`:""}
     <div class="ms-act"><button type="button" class="linkbtn" data-a="all">Select all</button><button type="button" class="linkbtn" data-a="none">Clear</button><span class="note ms-n"></span></div>
     <div class="ms-list">${c.map(a=>`<div class="ms-g">${a.h&&c.length>1?`<div class="ms-h">${esc(tc(a.h))}</div>`:""}${a.items.map(d=>`<label class="ms-i"><input type="checkbox" value="${esc(d)}"${g.includes(d)?" checked":""}><span>${esc(e(d))}</span></label>`).join("")}</div>`).join("")}</div>
-    <div class="ms-foot"><button type="button" class="ms-ok">Apply</button></div></div></div>`}function wireMsel(r,t){const c=$("#"+r);if(!c)return;const g=$(".msb",c),h=$(".msp",c),n=$(".ms-q",c),e=$$("input[type=checkbox]",c),i=$(".ms-n",c),l=e.filter(v=>v.checked).map(v=>v.value).join(""),s=()=>e.filter(v=>v.checked).map(v=>v.value),a=()=>{const v=s().length;i.textContent=v?v+" ticked":""},d=v=>{h.hidden=!0,g.setAttribute("aria-expanded","false"),document.removeEventListener("pointerdown",o,!0),document.removeEventListener("keydown",p),v&&s().join("")!==l&&(t(s()),render())},o=v=>{c.contains(v.target)||d(!0)},p=v=>{v.key==="Escape"&&d(!1)};g.onclick=()=>{if(!h.hidden)return d(!0);$$(".msp").forEach(v=>v.hidden=!0),h.hidden=!1,g.setAttribute("aria-expanded","true"),a(),document.addEventListener("pointerdown",o,!0),document.addEventListener("keydown",p),n&&n.focus()},e.forEach(v=>v.onchange=a),n&&(n.oninput=()=>{const v=n.value.trim().toLowerCase();$$(".ms-i",c).forEach(f=>f.hidden=!!v&&!f.textContent.toLowerCase().includes(v)),$$(".ms-g",c).forEach(f=>f.hidden=!$$(".ms-i",f).some(k=>!k.hidden))}),$$("[data-a]",c).forEach(v=>v.onclick=()=>{e.forEach(f=>{f.closest(".ms-i").hidden||(f.checked=v.dataset.a==="all")}),a()}),$(".ms-ok",c).onclick=()=>d(!0)}const DAYLAB=r=>({CD:"Campaign day ",CU:"Catch-up ",AC:"After catch-up ",LO:"Leftover "}[String(r).slice(0,2)]||r)+String(r).slice(2),dayOrd=r=>({CD:0,CU:1,AC:2,LO:3}[String(r).slice(0,2)]??9)*10+(+String(r).slice(2)||0);function renderCtx(){const r=PAGES[S.page],t=r.ds,c=S.geo,g=Object.keys(D.H).sort(),h=c.district?Object.keys(D.H[c.district]||{}).sort():[],n=(c.tehsils.length?c.tehsils:h).filter(a=>D.H[c.district]?.[a]).sort().map(a=>({h:a,items:[...D.H[c.district][a]].sort()}));let e="",i="";if(t==="cov"){r.noCamp||(e=chipRow(D.covCamps,S.cov.camp,"cov"));const a=D.cov.filter(o=>o.camp===S.cov.camp),d=o=>[...new Set(a.map(p=>p[o]).filter(Boolean))];i=msel("f-day","Day",[{items:d("day").sort((o,p)=>dayOrd(o)-dayOrd(p))}],S.cov.days,"All days",!!r.noCamp,DAYLAB)+sel("f-tier","Tier",d("tier").sort(),S.cov.tier,"All tiers",o=>"Tier "+o)+sel("f-risk","Risk category",d("risk").sort(),S.cov.risk,"All categories",o=>o)}else if(t==="icm"){r.noCamp||(e=chipRow(D.icmCamps,S.icm.camp,"icm"));const a=D.icm.filter(o=>r.noCamp||o.camp===S.icm.camp),d=o=>[...new Set(a.map(p=>p[o]).filter(Boolean))];i=msel("f-iday","Day",[{items:d("day").sort((o,p)=>o-p)}],S.icm.days,"All days",!1,o=>"Day "+o)+sel("f-des","Designation",d("designation").sort(),S.icm.designation,"All designations",o=>o.length>30?o.slice(0,28)+"\u2026":o)+sel("f-org","Organisation",d("org").sort(),S.icm.org,"All organisations",o=>o.length>30?o.slice(0,28)+"\u2026":o)+sel("f-pop","Population",d("pop").sort(),S.icm.pop,"HRMP + non-HRMP",o=>o==="hrmp"?"HRMP":o==="nonhrmp"?"Non-HRMP":o)}else if(t==="pre"){const a=preList(r.src);a.length&&(e=chipRow(a,preCamp(r.src),"pre"))}else if(t==="pca")pcaList().length&&(e=chipRow(pcaList(),pcaCamp(),"pca"));else if(t==="tm"||t==="am"){const a=S[t],d=t==="tm"?D.tmCamps||[]:D.amCamps||[],o=t==="tm"?tmCamp():amCamp();d.length&&(e=chipRow(d,o,t));const p=(t==="tm"?D.tm||[]:D.am||[]).filter(f=>f.camp===o),v=f=>[...new Set(p.map(k=>k[f]).filter(Boolean))];i=msel("f-mday","Day",[{items:v("day").sort((f,k)=>f-k)}],a.days,"All days",!1,f=>"Day "+f)+sel("f-mdes","Designation",v("des").sort(),a.des,"All designations",f=>f.length>30?f.slice(0,28)+"\u2026":f)+sel("f-morg","Organisation",v("org").sort(),a.org,"All organisations",f=>f.length>30?f.slice(0,28)+"\u2026":f)}else if(t==="zl"){const a=D.zlCamps||[],o=zlCamp();a.length&&(e=chipRow(a,o,"zl"));const p=(D.zl||[]).filter(f=>f.camp===o);i=msel("f-zday","Day",[{items:[...new Set(p.map(f=>f.day).filter(Boolean))].sort((f,k)=>f-k)}],S.zl.days,"All days",!1,f=>"Day "+f)}else e=t==="tri"?chipRow(D.covCamps,triCamp(),"tri"):chipRow(D.cmpCamps,S.cmp.camp,"cmp");const l=c.district||c.tehsils.length||c.ucs.length||t==="cov"&&(S.cov.days.length||S.cov.tier||S.cov.risk)||t==="icm"&&(S.icm.days.length||S.icm.designation||S.icm.org||S.icm.pop)||(t==="tm"||t==="am")&&(S[t].days.length||S[t].des||S[t].org)||t==="zl"&&S.zl.days.length;$("#ctx").innerHTML=`<div class="ctx-in">
+    <div class="ms-foot"><button type="button" class="ms-ok">Apply</button></div></div></div>`}function wireMsel(r,t){const c=$("#"+r);if(!c)return;const g=$(".msb",c),h=$(".msp",c),n=$(".ms-q",c),e=$$("input[type=checkbox]",c),i=$(".ms-n",c),l=e.filter(v=>v.checked).map(v=>v.value).join(""),s=()=>e.filter(v=>v.checked).map(v=>v.value),a=()=>{const v=s().length;i.textContent=v?v+" ticked":""},d=v=>{h.hidden=!0,g.setAttribute("aria-expanded","false"),document.removeEventListener("pointerdown",o,!0),document.removeEventListener("keydown",p),v&&s().join("")!==l&&(t(s()),render())},o=v=>{c.contains(v.target)||d(!0)},p=v=>{v.key==="Escape"&&d(!1)};g.onclick=()=>{if(!h.hidden)return d(!0);$$(".msp").forEach(v=>v.hidden=!0),h.hidden=!1,g.setAttribute("aria-expanded","true"),a(),document.addEventListener("pointerdown",o,!0),document.addEventListener("keydown",p),n&&n.focus()},e.forEach(v=>v.onchange=a),n&&(n.oninput=()=>{const v=n.value.trim().toLowerCase();$$(".ms-i",c).forEach(f=>f.hidden=!!v&&!f.textContent.toLowerCase().includes(v)),$$(".ms-g",c).forEach(f=>f.hidden=!$$(".ms-i",f).some(k=>!k.hidden))}),$$("[data-a]",c).forEach(v=>v.onclick=()=>{e.forEach(f=>{f.closest(".ms-i").hidden||(f.checked=v.dataset.a==="all")}),a()}),$(".ms-ok",c).onclick=()=>d(!0)}const DAYLAB=r=>({CD:"Campaign day ",CU:"Catch-up ",AC:"After catch-up ",LO:"Leftover "}[String(r).slice(0,2)]||r)+String(r).slice(2),dayOrd=r=>({CD:0,CU:1,AC:2,LO:3}[String(r).slice(0,2)]??9)*10+(+String(r).slice(2)||0);function renderCtx(){const r=PAGES[S.page],t=r.ds,c=S.geo,g=Object.keys(D.H).sort(),h=c.district?Object.keys(D.H[c.district]||{}).sort():[],n=(c.tehsils.length?c.tehsils:h).filter(a=>D.H[c.district]?.[a]).sort().map(a=>({h:a,items:[...D.H[c.district][a]].sort()}));let e="",i="";if(t==="cov"){r.noCamp||(e=chipRow(D.covCamps,S.cov.camp,"cov"));const a=D.cov.filter(o=>o.camp===S.cov.camp),d=o=>[...new Set(a.map(p=>p[o]).filter(Boolean))];i=msel("f-day","Day",[{items:d("day").sort((o,p)=>dayOrd(o)-dayOrd(p))}],S.cov.days,"All days",!!r.noCamp,DAYLAB)+sel("f-tier","Tier",d("tier").sort(),S.cov.tier,"All tiers",o=>"Tier "+o)+sel("f-risk","Risk category",d("risk").sort(),S.cov.risk,"All categories",o=>o)}else if(t==="icm"){r.noCamp||(e=chipRow(D.icmCamps,S.icm.camp,"icm"));const a=D.icm.filter(o=>r.noCamp||o.camp===S.icm.camp),d=o=>[...new Set(a.map(p=>p[o]).filter(Boolean))];i=msel("f-iday","Day",[{items:d("day").sort((o,p)=>o-p)}],S.icm.days,"All days",!1,o=>"Day "+o)+sel("f-des","Designation",d("designation").sort(),S.icm.designation,"All designations",o=>o.length>30?o.slice(0,28)+"\u2026":o)+sel("f-org","Organisation",d("org").sort(),S.icm.org,"All organisations",o=>o.length>30?o.slice(0,28)+"\u2026":o)+sel("f-pop","Population",d("pop").sort(),S.icm.pop,"HRMP + non-HRMP",o=>o==="hrmp"?"HRMP":o==="nonhrmp"?"Non-HRMP":o)}else if(t==="pre"){const a=preList(r.src);a.length&&(e=chipRow(a,preCamp(r.src),"pre"))}else if(t==="pca")pcaList().length&&(e=chipRow(pcaList(),pcaCamp(),"pca"));else if(t==="tm"||t==="am"){const a=S[t],d=t==="tm"?D.tmCamps||[]:D.amCamps||[],o=t==="tm"?tmCamp():amCamp();d.length&&(e=chipRow(d,o,t));const p=(t==="tm"?D.tm||[]:D.am||[]).filter(f=>f.camp===o),v=f=>[...new Set(p.map(k=>k[f]).filter(Boolean))];i=msel("f-mday","Day",[{items:v("day").sort((f,k)=>f-k)}],a.days,"All days",!1,f=>"Day "+f)+sel("f-mdes","Designation",v("des").sort(),a.des,"All designations",f=>f.length>30?f.slice(0,28)+"\u2026":f)+sel("f-morg","Organisation",v("org").sort(),a.org,"All organisations",f=>f.length>30?f.slice(0,28)+"\u2026":f)}else if(t==="zl"){const a=D.zlCamps||[],o=zlCamp();a.length&&(e=chipRow(a,o,"zl"));const p=(D.zl||[]).filter(f=>f.camp===o);i=msel("f-zday","Day",[{items:[...new Set(p.map(f=>f.day).filter(Boolean))].sort((f,k)=>f-k)}],S.zl.days,"All days",!1,f=>"Day "+f)}else e=t==="tri"?"":chipRow(D.cmpCamps,S.cmp.camp,"cmp");const l=c.district||c.tehsils.length||c.ucs.length||t==="cov"&&(S.cov.days.length||S.cov.tier||S.cov.risk)||t==="icm"&&(S.icm.days.length||S.icm.designation||S.icm.org||S.icm.pop)||(t==="tm"||t==="am")&&(S[t].days.length||S[t].des||S[t].org)||t==="zl"&&S.zl.days.length;$("#ctx").innerHTML=`<div class="ctx-in">
     ${sitebarHTML()}
     <div class="ctx-top">
       <div style="display:flex;gap:12px;align-items:flex-end;min-width:0">
         <button class="ibtn menu-btn" id="menu" aria-label="Open menu"><svg viewBox="0 0 16 16"><path d="M2.5 4h11M2.5 8h11M2.5 12h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
-        <div class="ptitle"><div class="eyebrow">${esc(r.eb)}</div><h1>${esc(r.t)}</h1><p>${esc(scopeName())}${t==="cov"&&!r.noCamp?" \xB7 "+esc(S.cov.camp):""}${t==="icm"&&!r.noCamp?" \xB7 "+esc(S.icm.camp):""}${t==="cmp"?" \xB7 "+esc(S.cmp.camp):""}${t==="tri"?" \xB7 "+esc(triCamp()):""}${t==="pre"&&preCamp(r.src)?" \xB7 "+esc(preCamp(r.src)):""}${t==="pca"&&pcaCamp()?" \xB7 "+esc(pcaCamp()):""}${t==="tm"&&tmCamp()?" \xB7 "+esc(tmCamp()):""}${t==="am"&&amCamp()?" \xB7 "+esc(amCamp()):""}${t==="zl"&&zlCamp()?" \xB7 "+esc(zlCamp()):""}</p></div>
+        <div class="ptitle"><div class="eyebrow">${esc(r.eb)}</div><h1>${esc(r.t)}</h1><p>${esc(scopeName())}${t==="cov"&&!r.noCamp?" \xB7 "+esc(S.cov.camp):""}${t==="icm"&&!r.noCamp?" \xB7 "+esc(S.icm.camp):""}${t==="cmp"?" \xB7 "+esc(S.cmp.camp):""}${t==="tri"?" \xB7 "+esc(triLabel()):""}${t==="pre"&&preCamp(r.src)?" \xB7 "+esc(preCamp(r.src)):""}${t==="pca"&&pcaCamp()?" \xB7 "+esc(pcaCamp()):""}${t==="tm"&&tmCamp()?" \xB7 "+esc(tmCamp()):""}${t==="am"&&amCamp()?" \xB7 "+esc(amCamp()):""}${t==="zl"&&zlCamp()?" \xB7 "+esc(zlCamp()):""}</p></div>
       </div>
       ${e}
     </div>
@@ -846,10 +846,10 @@ new MutationObserver(()=>{if(window.GLASS3D){if(ok()){if(!GLASS3D.on)GLASS3D.sta
 .tri-tw{overflow:auto;max-height:74vh;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
 .tri-tw table{border-collapse:separate;border-spacing:0;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
 .tri-tw th,.tri-tw td{padding:9px 9px;text-align:center;white-space:nowrap;border-bottom:1px solid var(--line)}
-.tri-tw thead th{position:sticky;background:var(--rail);color:#fff;font-weight:700;z-index:3}
-.tri-tw thead tr.g th{top:0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;border-left:1px solid #ffffff3a}
-.tri-tw thead tr.c th{top:38px;font-size:12.5px;background:var(--rail-2);border-left:1px solid #ffffff22;white-space:normal;line-height:1.25;min-width:80px}
-.tri-tw thead th.nm{left:0;z-index:5;text-align:left;min-width:210px}
+.tri-tw thead th{position:sticky;background:#0b1740;color:#fff;font-weight:800;z-index:3;text-shadow:none}
+.tri-tw thead tr.g th{top:0;font-size:13.5px;letter-spacing:.05em;text-transform:uppercase;border-left:1px solid #ffffff55;background:#0b1740;color:#fff}
+.tri-tw thead tr.c th{top:42px;font-size:13.5px;background:#1d3a8a;color:#fff;border-left:1px solid #ffffff40;white-space:normal;line-height:1.25;min-width:88px;text-transform:none;letter-spacing:0}
+.tri-tw thead th.nm{left:0;z-index:5;text-align:left;min-width:230px;white-space:normal;font-size:14px;background:#0b1740;color:#fff}.tri-tw thead th.cp{min-width:120px;z-index:4;background:#0b1740;color:#fff;font-size:13.5px}.tri-tw td.cp{font-weight:650;font-size:13px;color:var(--ink-2)}
 .tri-tw td.nm{position:sticky;left:0;background:var(--surface);text-align:left;font-weight:650;z-index:2;border-right:1px solid var(--line)}
 .tri-tw td.nm small{display:block;font-weight:500;color:var(--muted);font-size:11.5px}
 .tri-tw tr.lvdiv td{background:var(--accent-soft);font-weight:750}.tri-tw tr.lvdist td{background:var(--surface-2);font-weight:650}
@@ -857,6 +857,7 @@ new MutationObserver(()=>{if(window.GLASS3D){if(ok()){if(!GLASS3D.on)GLASS3D.sta
 .tri-tw .gs{border-left:2px solid var(--line-2)}
 .tri-tw td.num{font-weight:650}.tri-tw td.zero{color:var(--muted);font-weight:500}.tri-tw td.na{color:var(--muted)}.tri-tw td.tot{font-weight:800}
 .tri-foot{margin-top:10px;font-size:12px;color:var(--muted)}
+.tri-camps{max-width:100%}.tri-ab{font:inherit;font-size:12.5px;font-weight:700;border:0;background:none;color:var(--accent);cursor:pointer;padding:2px 4px;text-decoration:underline}
 .tri-empty{padding:36px;text-align:center;color:var(--muted)}
 </style>
 <script id="tri-js">
@@ -884,8 +885,10 @@ const TRI_COLS=[
 ];
 const ALL=TRI_COLS.flatMap(g=>g.c);
 const TIPS={NT:"Team did not visit",TVBMC:"Team missed child"};
-function triCamp(){return D.covCamps.includes(S.tri.camp)?S.tri.camp:D.covCamps.at(-1)}
-window.triCamp=triCamp;
+function triCamps(){const a=(S.tri.camps||[]).filter(c=>D.covCamps.includes(c));return a.length?D.covCamps.filter(c=>a.includes(c)):[D.covCamps.at(-1)]}
+function triCamp(){return triCamps()[0]}
+function triLabel(){const a=triCamps();return a.length>2?a.length+" campaigns":a.join(" + ")}
+window.triCamp=triCamp;window.triLabel=triLabel;
 const BANDTXT={pass:"On target",watch:"Watch",fail:"Below benchmark"};
 function tfmt(c,v){if(v==null||!isFinite(v))return null;if(c.f==="int")return nf.format(Math.round(v));if(c.f==="pct2")return(v*100).toFixed(2)+"%";return(v*100).toFixed(v>=.9995||v===0?0:1)+"%"}
 function tband(c,v){return c.ind&&v!=null&&isFinite(v)?bandOf(IND[c.ind],v):null}
@@ -907,44 +910,45 @@ function triData(camp){
    M.set(k,o)}
   out[lv]=M}
  return out}
-function triRows(camp){
+function triRows1(camp){
  const A=triData(camp),R=[],lv=S.tri.lv,g=S.geo;
- if(lv.div)R.push({lv:"div",n:"Bannu Division",s:"",m:A.div.get("all")||{}});
+ if(lv.div)R.push({lv:"div",n:"Bannu Division",s:"",camp,m:A.div.get("all")||{}});
  const U=D.U.filter(u=>geoOK({district:u.district,tehsil:u.tehsil,uc:u.name}));
  const ds=[...new Set(U.map(u=>u.district))].sort();
  for(const d of ds){
-  if(lv.dist)R.push({lv:"dist",n:tc(d),s:"District",m:A.dist.get(d)||{}});
-  if(lv.teh)for(const t of [...new Set(U.filter(u=>u.district===d).map(u=>u.tehsil))].sort())R.push({lv:"teh",n:tc(t),s:"Tehsil · "+tc(d),m:A.teh.get(d+"|"+t)||{}});
-  if(lv.uc)for(const u of U.filter(u=>u.district===d).sort((a,b)=>a.tehsil.localeCompare(b.tehsil)||a.name.localeCompare(b.name)))R.push({lv:"uc",n:tc(u.name),s:"UC · "+tc(u.tehsil)+" · "+tc(u.district),m:A.uc.get(d+"|"+u.name)||{}})}
+  if(lv.dist)R.push({lv:"dist",n:tc(d),s:"District",camp,m:A.dist.get(d)||{}});
+  if(lv.teh)for(const t of [...new Set(U.filter(u=>u.district===d).map(u=>u.tehsil))].sort())R.push({lv:"teh",n:tc(t),s:"Tehsil · "+tc(d),camp,m:A.teh.get(d+"|"+t)||{}});
+  if(lv.uc)for(const u of U.filter(u=>u.district===d).sort((a,b)=>a.tehsil.localeCompare(b.tehsil)||a.name.localeCompare(b.name)))R.push({lv:"uc",n:tc(u.name),s:"UC · "+tc(u.tehsil)+" · "+tc(u.district),camp,m:A.uc.get(d+"|"+u.name)||{}})}
  return R}
+function triRows(camps){const per=camps.map(triRows1),n=per[0].length,R=[];for(let i=0;i<n;i++)per.forEach(p=>R.push(p[i]));return R}
 function triHTML(R){
- let h='<table><thead><tr class="g"><th class="nm" rowspan="2">Area</th>'+TRI_COLS.map(g=>`<th colspan="${g.c.length}" class="gs">${esc(g.g)}</th>`).join("")+'</tr><tr class="c">';
+ let h='<table><thead><tr class="g"><th class="nm" rowspan="2">Division / District / Tehsil / UC Name</th><th class="cp" rowspan="2">Campaign</th>'+TRI_COLS.map(g=>`<th colspan="${g.c.length}" class="gs">${esc(g.g)}</th>`).join("")+'</tr><tr class="c">';
  TRI_COLS.forEach(g=>g.c.forEach((c,i)=>{const tip=c.t.endsWith("NT")?TIPS.NT:c.t.endsWith("TVBMC")?TIPS.TVBMC:c.ind&&IND[c.ind].d||"";h+=`<th class="${i?"":"gs"}" title="${esc(tip)}">${esc(c.t)}</th>`}));
  h+="</tr></thead><tbody>";
- if(!R.length)h+=`<tr><td class="tri-empty" colspan="${ALL.length+1}">Tick at least one level above.</td></tr>`;
- for(const r of R){h+=`<tr class="lv${r.lv}"><td class="nm">${esc(r.n)}${r.s?`<small>${esc(r.s)}</small>`:""}</td>`;
+ if(!R.length)h+=`<tr><td class="tri-empty" colspan="${ALL.length+2}">Tick at least one level above.</td></tr>`;
+ for(const r of R){h+=`<tr class="lv${r.lv}"><td class="nm">${esc(r.n)}${r.s?`<small>${esc(r.s)}</small>`:""}</td><td class="cp">${esc(r.camp)}</td>`;
   TRI_COLS.forEach(g=>g.c.forEach((c,i)=>{const v=r.m[c.k],t=tfmt(c,v),b=tband(c,v),gs=i?"":" gs";
    if(t==null)h+=`<td class="na${gs}">–</td>`;
    else if(b)h+=`<td class="${gs.trim()}"><span class="tri-p tri-${b}">${t}</span></td>`;
    else h+=`<td class="${c.bold?"tot":"num"}${v===0?" zero":""}${gs}">${t}</td>`}));h+="</tr>"}
  return h+"</tbody></table>"}
 function loadExcelJS(){return window.ExcelJS?Promise.resolve():new Promise((ok,no)=>{const s=document.createElement("script");s.src="assets/exceljs.min.js";s.onload=ok;s.onerror=()=>no(new Error("ExcelJS could not be loaded"));document.head.appendChild(s)})}
-async function triExcel(R,camp){
+async function triExcel(R,camp){camp=camp||triLabel();
  await loadExcelJS();
- const wb=new ExcelJS.Workbook(),ws=wb.addWorksheet("Data Triangulation",{views:[{state:"frozen",xSplit:1,ySplit:2}]});
+ const wb=new ExcelJS.Workbook(),ws=wb.addWorksheet("Data Triangulation",{views:[{state:"frozen",xSplit:1,ySplit:2}]});const C0=5;
  const FILL={pass:["FFD8F1E0","FF0B6B34"],watch:["FFFFE9BF","FF8A5300"],fail:["FFFADAD7","FFA3231B"]},navy={type:"pattern",pattern:"solid",fgColor:{argb:"FF0A2F5F"}};
- ws.addRow(["Area","Level","District",...TRI_COLS.flatMap(g=>g.c.map((c,i)=>i?"":g.g))]);ws.addRow(["","","",...ALL.map(c=>c.t)]);
- let col=4;TRI_COLS.forEach(g=>{ws.mergeCells(1,col,1,col+g.c.length-1);col+=g.c.length});
+ ws.addRow(["Division / District / Tehsil / UC Name","Level","District","Campaign",...TRI_COLS.flatMap(g=>g.c.map((c,i)=>i?"":g.g))]);ws.addRow(["","","","",...ALL.map(c=>c.t)]);
+ let col=C0;TRI_COLS.forEach(g=>{ws.mergeCells(1,col,1,col+g.c.length-1);col+=g.c.length});
  [1,2].forEach(i=>ws.getRow(i).eachCell(c=>{c.fill=navy;c.font={bold:true,color:{argb:"FFFFFFFF"}};c.alignment={horizontal:"center",vertical:"middle",wrapText:true}}));
  ws.getRow(2).height=34;
  const LV={div:"Division",dist:"District",teh:"Tehsil",uc:"UC"};
  for(const r of R){const dn=r.lv==="div"?"":r.s.split(" · ").pop().replace(/^District$/,r.n);
-  const row=ws.addRow([r.n,LV[r.lv],dn,...ALL.map(c=>r.m[c.k]==null||!isFinite(r.m[c.k])?"–":r.m[c.k])]);
-  ALL.forEach((c,i)=>{const cell=row.getCell(4+i),v=r.m[c.k];cell.alignment={horizontal:"center"};if(v==null||!isFinite(v))return;
+  const row=ws.addRow([r.n,LV[r.lv],dn,r.camp,...ALL.map(c=>r.m[c.k]==null||!isFinite(r.m[c.k])?"–":r.m[c.k])]);
+  ALL.forEach((c,i)=>{const cell=row.getCell(C0+i),v=r.m[c.k];cell.alignment={horizontal:"center"};if(v==null||!isFinite(v))return;
    cell.numFmt=c.f==="int"?"#,##0":c.f==="pct2"?"0.00%":"0.0%";const b=tband(c,v);
    if(b){cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:FILL[b][0]}};cell.font={bold:true,color:{argb:FILL[b][1]}}}});
   if(r.lv==="div")row.font={bold:true}}
- ws.getColumn(1).width=26;ws.getColumn(2).width=10;ws.getColumn(3).width=16;for(let i=4;i<4+ALL.length;i++)ws.getColumn(i).width=15;
+ ws.getColumn(1).width=34;ws.getColumn(2).width=10;ws.getColumn(3).width=16;ws.getColumn(4).width=18;for(let i=C0;i<C0+ALL.length;i++)ws.getColumn(i).width=15;
  const bm=wb.addWorksheet("Benchmarks");bm.addRows([["Indicator","Rule (from the dashboard)"],
   ...ALL.filter(c=>c.ind).map(c=>[c.t,IND[c.ind].d||""]),["NT","Team did not visit (eLQAS, PCHS, PCM and ICM)"],["TVBMC","Team missed child (eLQAS, PCHS, PCM and ICM)"],
   ["Colour","Green on target, amber watch, red below benchmark, using the same bands as the other dashboard pages"]]);
@@ -952,15 +956,16 @@ async function triExcel(R,camp){
  const buf=await wb.xlsx.writeBuffer();
  await saveBlob(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),"Data-Triangulation_"+slug(camp)+"_"+slug(scopeName())+".xlsx")}
 function pgTri(r){
- const camp=triCamp(),R=triRows(camp),lv=S.tri.lv;
- const miss=[["lq","eLQAS"],["pchs","PCHS"],["pcm","PCM"]].filter(([k])=>!R.some(x=>x.m[k]!=null)).map(x=>x[1]);
- r.innerHTML=`<div class="tri-note">${miss.length?`For <b>${esc(camp)}</b> the dashboard has no ${esc(miss.join(", "))} data yet, so those columns show a dash. They fill in once the workbook is loaded.`:`All post-campaign sources are loaded for <b>${esc(camp)}</b>.`} NT means team did not visit and TVBMC means team missed child. Use the campaign chips and the district, tehsil and UC filters above.</div>
- <div class="card tri-bar"><div class="fld"><span class="fl">Show rows for</span><div class="tri-chks" id="tri-lv">${[["div","Division"],["dist","District"],["teh","Tehsil"],["uc","UC"]].map(([k,n])=>`<label class="tri-chk"><input type="checkbox" value="${k}"${lv[k]?" checked":""}>${n}</label>`).join("")}</div></div><div class="tri-sp"></div><button type="button" class="tri-dl" id="tri-dl"${R.length?"":" disabled"}>Download Excel</button></div>
+ const camps=triCamps(),camp=triLabel(),R=triRows(camps),lv=S.tri.lv;
+ const miss=camps.map(c=>[c,[["lq","eLQAS"],["pchs","PCHS"],["pcm","PCM"]].filter(([k])=>!R.some(x=>x.camp===c&&x.m[k]!=null)).map(x=>x[1])]).filter(x=>x[1].length);
+ r.innerHTML=`<div class="tri-note">${miss.length?miss.map(([c,m])=>`<b>${esc(c)}</b>: no ${esc(m.join(", "))} data yet`).join(" · ")+`. Those columns show a dash.`:`All post-campaign sources are loaded for the selected campaign${camps.length>1?"s":""}.`} NT means team did not visit and TVBMC means team missed child. Tick one or more campaigns below, and use the district, tehsil and UC filters above.</div>
+ <div class="card tri-bar"><div class="fld tri-camps"><span class="fl">Campaign <button type="button" class="tri-ab" id="tri-all">All</button><button type="button" class="tri-ab" id="tri-last">Latest only</button></span><div class="tri-chks" id="tri-cp">${D.covCamps.map(c=>`<label class="tri-chk"><input type="checkbox" value="${esc(c)}"${camps.includes(c)?" checked":""}>${esc(c)}</label>`).join("")}</div></div><div class="fld"><span class="fl">Show rows for</span><div class="tri-chks" id="tri-lv">${[["div","Division"],["dist","District"],["teh","Tehsil"],["uc","UC"]].map(([k,n])=>`<label class="tri-chk"><input type="checkbox" value="${k}"${lv[k]?" checked":""}>${n}</label>`).join("")}</div></div><div class="tri-sp"></div><button type="button" class="tri-dl" id="tri-dl"${R.length?"":" disabled"}>Download Excel</button></div>
  <div class="tri-leg"><b>Colour code</b><span class="tri-p tri-pass">On target</span><span class="tri-p tri-watch">Watch</span><span class="tri-p tri-fail">Below benchmark</span><span>– not assessed in this campaign</span></div>
  <div class="tri-tw">${triHTML(R)}</div><div class="tri-foot">${R.length} row${R.length===1?"":"s"} · ${esc(camp)} · ${esc(scopeName())}. Same figures and benchmarks as the coverage, ICM, LQAS, PCHS and PCM pages.</div>`;
+ $("#tri-cp").onchange=()=>{S.tri.camps=$$("#tri-cp input").filter(i=>i.checked).map(i=>i.value);render()};$("#tri-all").onclick=()=>{S.tri.camps=[...D.covCamps];render()};$("#tri-last").onclick=()=>{S.tri.camps=[D.covCamps.at(-1)];render()};
  $("#tri-lv").onchange=()=>{$$("#tri-lv input").forEach(i=>S.tri.lv[i.value]=i.checked?1:0);render()};
  $("#tri-dl").onclick=async e=>{const b=e.currentTarget;b.disabled=true;try{await triExcel(R,camp)}catch(x){console.error(x);alert("The Excel file could not be created: "+x.message)}b.disabled=false}}
-S.tri={camp:"",lv:{div:1,dist:1,teh:0,uc:0}};
+S.tri={camps:[],lv:{div:1,dist:1,teh:0,uc:0}};
 PAGES.tri={eb:"Data Triangulation",t:"Coverage, ICM and post-campaign findings side by side",ds:"tri"};
 RENDER.tri=pgTri;
 })();
