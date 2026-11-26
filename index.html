@@ -82,7 +82,7 @@ aside.rail .rail-foot b{color:#1f2937}
 
 /* ---- Main page (Campaigns / Surveillance) + surveillance module token aliases ---- */
 :root{--ink2:var(--ink-2);--line2:var(--line-2);--surface2:var(--surface-2)}
-.hm{position:fixed;inset:0;z-index:60;overflow:auto;background:var(--ground);color:var(--ink);font-family:var(--body)}.hm[hidden]{display:none}
+.hm{position:fixed;inset:0;z-index:60;overflow:auto;background:var(--ground);color:var(--ink);font-family:var(--body)}.hm[hidden]{display:none}html.svlock,html.svlock body{overflow:hidden!important}
 .hm-top{background:linear-gradient(135deg,var(--rail) 0,var(--rail-2) 100%);color:var(--rail-ink);padding:max(28px,6vh) max(20px,env(safe-area-inset-right,0px)) 74px max(20px,env(safe-area-inset-left,0px))}
 .hm-in{max-width:1080px;margin:0 auto}.hm-brand{display:flex;align-items:center;gap:14px}.hm-brand svg{width:46px;height:46px;flex:none}
 .hm-brand small{display:block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--rail-muted)}.hm-brand b{display:block;font-family:var(--display);font-size:clamp(22px,3.6vw,32px);color:#fff;line-height:1.15}
@@ -1214,7 +1214,7 @@ sync();setTimeout(sync,300);
 const hm=document.getElementById("home");
 function note(m){try{if(typeof toast==="function")toast(m)}catch(e){}}
 function loadSv(h){if(window.SV){SV.open(h);return}if(window.__svl)return;window.__svl=1;const s=document.createElement("script");s.src="surv/surv.js";s.onload=()=>SV.open(h);s.onerror=()=>{window.__svl=0;note("Could not load the surveillance module")};document.head.appendChild(s)}
-function svRoute(){const hh=(location.hash||"").slice(1);
+function svRoute(){const hh=(location.hash||"").slice(1);document.documentElement.classList.toggle("svlock",hh.slice(0,2)==="sv");
  if(!hh||hh==="home"){if(window.SV)SV.close();hm.hidden=false;document.title="Bannu Division Polio Monitor";return}
  if(hh.slice(0,2)==="sv"){hm.hidden=true;loadSv(hh);return}
  hm.hidden=true;if(window.SV)SV.close()}
