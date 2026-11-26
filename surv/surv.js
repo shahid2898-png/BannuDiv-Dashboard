@@ -243,43 +243,177 @@ function pAsv(){const A=DATA.ASV,ss=asvSites(),nm=S.d<0?"Bannu Division":DATA.D[
 function basisBox(){return `<div class="svbasis"><div class="svbt"><b>Indicator basis</b><small>${S.pit?"Point-in-time: every year is counted over the same dates, 1 Jan to "+S.cd+" "+MN[S.cm-1]+", so years are like for like.":"Annualised: the current year to date is scaled to a full year (cases \u00d7 365 \u00f7 days elapsed)."}</small></div><div class="svseg" role="radiogroup" aria-label="Indicator basis"><button type="button" class="svbo ${S.pit?"":"on"}" data-p="0" role="radio" aria-checked="${!S.pit}">Annualised</button><button type="button" class="svbo ${S.pit?"on":""}" data-p="1" role="radio" aria-checked="${S.pit}">Point-in-time</button></div></div>`}
 function bannuWpvLine(){const CF=DATA.cf||[],y=CY(),w=CF.filter(c=>c[1]==="WPV1"&&c[2]===y),a=CF.filter(c=>c[1]==="WPV1"),by={};w.forEach(c=>by[c[3]]=(by[c[3]]||0)+1);const ds=Object.keys(by).map(k=>k+" "+by[k]).join(", ");const l=a.slice().sort((p,q)=>q[2]-p[2]||(q[7]||"").slice(6).localeCompare((p[7]||"").slice(6)))[0];return `<p class="svs"><b class="srt">Bannu Division has ${w.length} confirmed WPV1 case${w.length===1?"":"s"} in ${y}${ds?" ("+ds+")":""}. ${a.length} WPV1 cases are recorded in the EDCS line list from 2022 to date.</b> Figures change every week; check polioeradication.org for the latest.</p>`}
 
-// ---- client-side deck builder (mirrors the dashboard pages)
+// ---- client-side deck builder (slide-fitted, native tables and charts, canvas maps)
 function loadScript(u){return new Promise((ok,no)=>{const e=document.createElement("script");e.src=u;e.onload=ok;e.onerror=()=>no(new Error("Could not load "+u));document.head.appendChild(e)})}
-function svgDataUrl(svg){return new Promise(ok=>{try{const o=[svg,...svg.querySelectorAll("*")],c=svg.cloneNode(true),n=[c,...c.querySelectorAll("*")],P=["fill","stroke","stroke-width","stroke-opacity","fill-opacity","opacity","font-size","font-weight","font-family","paint-order","text-anchor","stroke-linejoin","letter-spacing","stroke-dasharray"];
- o.forEach((e,i)=>{const cs=getComputedStyle(e);P.forEach(q=>n[i].style.setProperty(q,cs.getPropertyValue(q)))});
- const vb=svg.viewBox&&svg.viewBox.baseVal&&svg.viewBox.baseVal.width?svg.viewBox.baseVal:null;if(!vb)return ok(null);const W=vb.width,H=vb.height;c.setAttribute("xmlns","http://www.w3.org/2000/svg");c.setAttribute("width",W);c.setAttribute("height",H);
- const img=new Image();img.onload=()=>{const sc=Math.min(1.6,1800/W),cv=document.createElement("canvas");cv.width=Math.round(W*sc);cv.height=Math.round(H*sc);const g=cv.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,cv.width,cv.height);g.drawImage(img,0,0,cv.width,cv.height);ok({d:cv.toDataURL("image/jpeg",.82),w:W,h:H})};img.onerror=()=>ok(null);img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(new XMLSerializer().serializeToString(c))}catch(e){ok(null)}})}
 async function buildDeck(code,name,msg){
  if(!window.PptxGenJS)await loadScript("assets/pptxgen.bundle.js");
  if(!GEO)await new Promise(r=>loadGeo(r));
  const keep=Object.assign({},S),di=code==="ALL"?-1:["BANNU","LAKKI","WAZIRN"].indexOf(code);
- const root=$("#svroot"),host=document.createElement("div");host.style.cssText="position:absolute;left:-20000px;top:0;width:1200px";root.appendChild(host);
+ try{S.d=di;S.ys=[2022,2023,2024,2025,2026];S.src="all";S.y=CY();return await deckMake(di,name,keep.pit,msg)}
+ finally{Object.keys(keep).forEach(k=>S[k]=keep[k]);render()}}
+function mapCanvas(ids,paint,sc){sc=sc||1.8;const B=mapBase(ids),cv=document.createElement("canvas");cv.width=Math.round(B.W*sc);cv.height=Math.round(B.H*sc);const g=cv.getContext("2d");g.fillStyle="#FFFFFF";g.fillRect(0,0,cv.width,cv.height);g.scale(sc,sc);
+ const P=(lo,la)=>[+B.X(lo),+B.Y(la)],U=GEO.uc,path=(i)=>{g.beginPath();U[i][3].forEach(r=>{r.forEach((q,k)=>{const p=P(q[0],q[1]);k?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])});g.closePath()})};
+ const ds=[...new Set(ids.map(i=>U[i][0]))];
+ g.lineJoin="round";g.strokeStyle="#1F2D38";g.lineWidth=3.4;ds.forEach(d=>{ids.filter(i=>U[i][0]===d).forEach(i=>{path(i);g.stroke()})});
+ paint.fill&&ids.forEach(i=>{path(i);g.fillStyle=paint.fill(i);g.fill();g.strokeStyle="#6F7F8B";g.lineWidth=.6;g.stroke()});
+ const halo=(t,x,y,fs,col,wt,it)=>{g.font=(it?"italic ":"")+(wt||"bold")+" "+fs+"px Calibri,Arial,sans-serif";g.textAlign="center";g.lineWidth=3.2;g.strokeStyle="rgba(255,255,255,.92)";g.strokeText(t,x,y);g.fillStyle=col;g.fillText(t,x,y)};
+ const cen=i=>{const rg=U[i][3].reduce((a,b)=>b.length>a.length?b:a);return P(rg.reduce((a,p)=>a+p[0],0)/rg.length,rg.reduce((a,p)=>a+p[1],0)/rg.length)};
+ if(paint.ucLabels){ids.filter(i=>!paint.labelIf||paint.labelIf(i)).forEach(i=>{const c=cen(i);halo(TC(U[i][2]),c[0],c[1],ids.length>40?8:ids.length>20?10:12,"#14201D")})}
+ else ds.forEach(d=>{const q=ids.filter(i=>U[i][0]===d);let sx=0,sy=0,n=0;q.forEach(i=>{const c=cen(i);sx+=c[0];sy+=c[1];n++});halo(TC(DATA.D[d]),sx/n,sy/n,S.d<0?26:30,"rgba(20,32,29,.55)","bold")});
+ try{const h=nbLabels(B,ids),re=/<text class="mpnb" x="([\d.\-]+)" y="([\d.\-]+)"[^>]*>([\s\S]*?)<\/text>/g;let m;while((m=re.exec(h))){const ts=[...m[3].matchAll(/<tspan[^>]*dy="([^"]*)"[^>]*>([^<]*)<\/tspan>/g)];ts.forEach(t=>{const em=parseFloat(t[1])||0;halo(t[2].replace(/&amp;/g,"&"),+m[1],+m[2]+em*16,15,"#5B6B76","normal",true)})}}catch(e){}
+ paint.after&&paint.after(g,P,halo);
+ return{d:cv.toDataURL("image/png"),w:B.W,h:B.H,P,B}}
+function mkr(g,shape,x,y,r,col){g.beginPath();if(shape==="c")g.arc(x,y,r,0,7);else if(shape==="t"){g.moveTo(x,y-r*1.15);g.lineTo(x+r*1.05,y+r*.85);g.lineTo(x-r*1.05,y+r*.85);g.closePath()}else{g.moveTo(x,y-r*1.2);g.lineTo(x+r*1.2,y);g.lineTo(x,y+r*1.2);g.lineTo(x-r*1.2,y);g.closePath()}g.fillStyle=col;g.fill();g.lineWidth=1.1;g.strokeStyle="#fff";g.stroke()}
+async function deckMake(di,name,pit,msg){
  const px=new PptxGenJS();px.layout="LAYOUT_WIDE";px.title="AFP surveillance update - "+name;
- const NAVY="1F2A44",TEAL="0E6B62",FILL={sg:"D5EFE0",svr:"F8D7D3",sa:"FBEBC8",sn:"FFFFFF"};
- const ds=asof().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
- const bas=keep.pit?"Point-in-time":"Annualised";
+ const FN="Calibri",HD="0B3D3A",AC="1F8A70",INK="1B2A33",MUT="6B7B86",GRN="D5EFE0",RED="F8D7D3",AMB="FBEBC8",YR=CY();
+ const ds=asof().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}),bas=pit?"Point-in-time":"Annualised",scope=di<0?"Bannu Division":DATA.D[di]+" district";
+ const foot="EOC Bannu Division · AFP surveillance · "+scope+" · "+bas+" basis · data as of "+ds;
+ const prog=t=>{msg&&(msg.textContent="Preparing the deck... "+t)};
  let n=0;
- {const sl=px.addSlide();sl.background={color:NAVY};sl.addText("AFP surveillance update",{x:.7,y:2.2,w:12,h:.9,fontSize:38,bold:true,color:"FFFFFF",fontFace:"Calibri"});sl.addText(name+(di<0?"":" district")+" · Bannu Division",{x:.7,y:3.15,w:12,h:.6,fontSize:22,color:"C4D8F5",fontFace:"Calibri"});sl.addText("Data as of "+ds+" · "+bas+" basis · EOC Bannu Division",{x:.7,y:3.9,w:12,h:.5,fontSize:15,color:"9FB3D1",fontFace:"Calibri"})}
- const head=(sl,t,sub)=>{sl.addShape(px.ShapeType.rect,{x:0,y:0,w:13.33,h:.95,fill:{color:NAVY}});sl.addText(t,{x:.4,y:.12,w:12.5,h:.5,fontSize:20,bold:true,color:"FFFFFF",fontFace:"Calibri",fit:"shrink"});if(sub)sl.addText(sub,{x:.4,y:.58,w:12.5,h:.32,fontSize:10.5,color:"C4D8F5",fontFace:"Calibri",fit:"shrink"});n++;sl.addText(String(n),{x:12.5,y:7.1,w:.6,h:.3,fontSize:9,color:"888888",align:"right"})};
- const pages=[["sc",pOv],["ind",pInd],["ev",pEv],["epi",pEpi],["con",pCon],["hsn",()=>pHsb("n")],["hst",()=>pHsb("t")],["es",pEs],["asv",pAsv],["map",pMapC],["mapz",pMapZ],["mapw",()=>pMapT("wpv")],["glob",pGlob]];
- try{
-  S.d=di;S.pit=keep.pit;S.ys=[2022,2023,2024,2025,2026];S.src="all";S.y=CY();
-  for(let pi=0;pi<pages.length;pi++){const [tab,fn]=pages[pi];msg&&(msg.textContent="Preparing the deck... "+(pi+1)+" of "+pages.length);S.tab=tab;
-   let html="";try{html=fn()}catch(e){continue}
-   host.innerHTML=html;await new Promise(r=>setTimeout(r,30));
-   const cards=[...host.querySelectorAll(".svcard")];
-   for(const c of cards){const t=(c.querySelector("h3")||{}).textContent||"",sub=(c.querySelector("p.svs")||{}).textContent||"";
-    const tbs=[...c.querySelectorAll("table")];
-    for(const tb of tbs){const rows=[...tb.querySelectorAll("tr")].map(r=>[...r.children].map(td=>({t:td.textContent.replace(/\s+/g," ").trim(),h:td.tagName==="TH"&&r.parentNode.tagName==="THEAD",cl:td.className})));
-     if(rows.length<2)continue;const hd=rows[0],body=rows.slice(1),per=13,nc=Math.max(...rows.map(r=>r.length)),fs=nc>12?7:nc>9?8:nc>6?9:10.5;
-     for(let k=0;k<body.length;k+=per){const sl=px.addSlide();head(sl,t+(k?" (continued)":""),sub);
-      const tr=[hd,...body.slice(k,k+per)].map((r,ri)=>r.map((cell,ci)=>({text:cell.t,options:{fontSize:fs,bold:ri===0||ci===0&&false,color:ri===0?"FFFFFF":"222222",fill:{color:ri===0?TEAL:(FILL[(cell.cl||"").split(" ").find(x=>FILL[x])]||(ri%2?"F6F8FA":"FFFFFF"))},align:ci===0?"left":"center",valign:"middle"}})));
-      sl.addTable(tr,{x:.4,y:1.15,w:12.5,border:{type:"solid",pt:.5,color:"D0D5DB"},fontFace:"Calibri",margin:[2,3,2,3]})}}
-    const svs=[...c.querySelectorAll("svg")].filter(v=>v.viewBox&&v.viewBox.baseVal&&v.viewBox.baseVal.width>300).slice(0,3);
-    for(const v of svs){const im=await svgDataUrl(v);if(!im)continue;const sl=px.addSlide();head(sl,t,sub);const mw=12.5,mh=5.9,r=Math.min(mw/im.w,mh/im.h),w=im.w*r,h=im.h*r;sl.addImage({data:im.d,x:.4+(mw-w)/2,y:1.1+(mh-h)/2,w,h})}}
-  }
-  const out=await px.write({outputType:"uint8array"});return out}
- finally{host.remove();Object.keys(keep).forEach(k=>S[k]=keep[k]);render()}}
+ const newSlide=(title,sub)=>{const sl=px.addSlide();n++;sl.background={color:"FFFFFF"};
+  sl.addShape(px.ShapeType.rect,{x:0,y:0,w:13.33,h:.85,fill:{color:HD},line:{color:HD}});sl.addShape(px.ShapeType.rect,{x:0,y:.85,w:13.33,h:.05,fill:{color:AC},line:{color:AC}});
+  sl.addText(title,{x:.45,y:.08,w:12.4,h:.7,fontSize:24,bold:true,color:"FFFFFF",fontFace:FN,valign:"middle",fit:"shrink"});
+  if(sub)sl.addText(sub,{x:.45,y:.98,w:12.4,h:.4,fontSize:12,italic:true,color:MUT,fontFace:FN,valign:"top",fit:"shrink"});
+  sl.addText(foot,{x:.45,y:7.08,w:10.5,h:.3,fontSize:9,color:MUT,fontFace:FN});sl.addText(String(n),{x:12.2,y:7.08,w:.7,h:.3,fontSize:9,color:MUT,align:"right",fontFace:FN});return sl};
+ const K={g:[GRN,"1E6B3A"],r:[RED,"A93226"],a:[AMB,"8A6212"]},kk=(v,bm,hi)=>v==null||isNaN(v)?null:((hi===false?v<=bm:v>=bm)?"g":"r");
+ const cut=(t,m)=>{t=String(t==null?"":t);return t.length>m?t.slice(0,Math.max(1,m-1))+"…":t};
+ // table: rows of strings or {t,k}
+ function tableSlides(title,sub,head,rows,o){o=o||{};if(!rows.length)return[];const nc=head.length,fs=o.fs||(nc<=5?12:nc<=7?11:nc<=9?10:nc<=12?9:8),rh=o.rh||(fs>=12?.38:fs>=11?.35:fs>=10?.32:fs>=9?.29:.26),hh=.5,top=o.y||1.5,avail=(o.h||5.45)-hh,per=Math.min(o.per||99,Math.max(3,Math.floor(avail/rh)));
+  const tx=r=>r&&r.t!=null?r.t:r,TW=12.4;let wt=head.map((h,i)=>Math.min(o.maxw||30,Math.max(5,Math.ceil(String(h).length*.7),...rows.map(r=>String(tx(r[i])).length))));if(o.first)wt[0]=Math.max(wt[0],o.first);const sm=wt.reduce((a,b)=>a+b,0),cw=wt.map(w=>w/sm*TW);const out=[];
+  for(let k=0;k<rows.length;k+=per){const sl=newSlide(title+(k?" (continued)":""),sub),slice=rows.slice(k,k+per);
+   const hr=head.map((h,i)=>({text:String(h),options:{bold:true,fontSize:fs,color:"FFFFFF",fill:{color:AC},align:i?"center":"left",valign:"middle",fontFace:FN}}));
+   const body=slice.map((r,ri)=>r.map((c,ci)=>{const t=tx(c),kc=c&&c.k&&K[c.k];return{text:cut(t,Math.floor((cw[ci]-.12)*(144/fs)*.92)),options:{fontSize:fs,fontFace:FN,color:kc?kc[1]:INK,bold:!!kc||(ci===0&&!!o.boldFirst)||(o.boldLast&&k+ri===rows.length-1),fill:{color:kc?kc[0]:(o.boldLast&&k+ri===rows.length-1?"E4ECEA":ri%2?"F4F8F7":"FFFFFF")},align:ci?"center":"left",valign:"middle"}}}));
+   sl.addTable([hr,...body],{x:.45,y:top,w:TW,colW:cw,rowH:[hh,...slice.map(()=>rh)],border:{type:"solid",pt:.5,color:"CCD6D3"},margin:[0,.06,0,.06]});out.push(sl)}return out}
+ function bar(sl,x,y,w,h,title,labels,series,o){o=o||{};const num=v=>v==null||isNaN(v)?0:+(+v).toFixed(o.dp==null?1:o.dp);
+  sl.addChart(o.line?px.charts.LINE:px.charts.BAR,series.map(s=>({name:s.n,labels,values:s.v.map(num)})),Object.assign({x,y,w,h,barDir:"col",barGrouping:o.stack?"stacked":"clustered",chartColors:series.map(s=>s.c),showLegend:series.length>1,legendPos:"b",legendFontSize:10,legendFontFace:FN,showTitle:true,title,titleFontSize:13,titleFontFace:FN,titleColor:INK,catAxisLabelFontSize:o.cfs||10,catAxisLabelFontFace:FN,valAxisLabelFontSize:9,valGridLine:{color:"E3E8EB",size:.5},showValue:o.noval?false:true,dataLabelFontSize:o.dfs||9,dataLabelFontFace:FN,dataLabelFormatCode:o.fmt||"0.0",dataLabelPosition:o.stack?"ctr":"outEnd",valAxisMaxVal:o.max,valAxisMinVal:0,barGapWidthPct:o.gap||60},o.x||{}))}
+ const A=areas(),tot=A[A.length-1],cur=ind(tot,YR),prv=ind(tot,YR-1),ys3=[YR-2,YR-1,YR],YS5=[2022,2023,2024,2025,2026],ycol=y=>"#"+(YC[y]||"#999999").slice(1);
+ const yc=y=>(YC[y]||"#999999").replace("#","");
+ // 1 title
+ {const sl=px.addSlide();n++;sl.background={color:HD};sl.addShape(px.ShapeType.rect,{x:0,y:5.2,w:13.33,h:.08,fill:{color:"2FB596"},line:{color:"2FB596"}});
+  sl.addText("EOC BANNU DIVISION · KHYBER PAKHTUNKHWA",{x:.8,y:1.5,w:11.5,h:.4,fontSize:14,color:"9ED8C8",bold:true,fontFace:FN,charSpacing:3});
+  sl.addText("AFP Surveillance Update",{x:.8,y:2.0,w:11.5,h:1.0,fontSize:46,bold:true,color:"FFFFFF",fontFace:FN});
+  sl.addText(scope,{x:.8,y:3.05,w:11.5,h:.7,fontSize:28,color:"DDF3EC",fontFace:FN});
+  sl.addText((di<0?"Bannu · Lakki Marwat · Wazir-N":"Bannu Division")+"   |   "+bas+" basis   |   Data as of "+ds,{x:.8,y:3.85,w:11.5,h:.5,fontSize:16,color:"9ED8C8",fontFace:FN})}
+ // 2 at a glance
+ prog("at a glance");
+ {const sl=newSlide("At a glance, "+YR+(pit?" (same period)":""),scope+". Green meets the benchmark, red does not."+(YR===CY()&&!pit?" Rates for "+YR+" are annualised to a full year.":""));
+  const T=[["AFP cases",cur.n,"n",null,null,prv.n,"reported"],["NPAFP rate",cur.npafp,"",3,true,prv.npafp,"per 100,000 under 15 · target ≥ 3"],["Stool adequacy",cur.adq,"%",80,true,prv.adq,"target ≥ 80%"],["Notified within 7 days",cur.n7,"%",80,true,prv.n7,"target ≥ 80%"],["Investigated within 48 h",cur.i48,"%",90,true,prv.i48,"target ≥ 90%"],["NPEV isolation",cur.evp,"%",10,true,prv.evp,"target ≥ 10%"],["True AFP rate",cur.tru,"",null,null,prv.tru,"per 100,000 under 15"],["Sabin-like isolation",cur.slp,"%",null,null,prv.slp,cur.sl+" of "+cur.ts+" specimens"]];
+  T.forEach((t,i)=>{const x=.45+(i%4)*3.13,y=1.6+Math.floor(i/4)*2.55,c=t[3]==null?null:kk(t[1],t[3],t[4]),acc=c==="g"?"1E8449":c==="r"?"C0392B":"5B7083",v=t[1]==null||isNaN(t[1])?"–":t[2]==="%"?t[1].toFixed(1)+"%":t[2]==="n"?Math.round(t[1]).toLocaleString():t[1].toFixed(1);
+   sl.addShape(px.ShapeType.rect,{x,y,w:2.95,h:2.3,fill:{color:"F6F9F8"},line:{color:"D5DFDC",width:.75}});sl.addShape(px.ShapeType.rect,{x,y,w:.1,h:2.3,fill:{color:acc},line:{color:acc}});
+   sl.addText(t[0],{x:x+.25,y:y+.12,w:2.6,h:.4,fontSize:13,color:MUT,fontFace:FN,bold:true});sl.addText(v,{x:x+.25,y:y+.55,w:2.6,h:.95,fontSize:40,bold:true,color:acc,fontFace:FN,fit:"shrink"});
+   const dl=t[5]!=null&&!isNaN(t[5])&&t[1]!=null&&!isNaN(t[1])?t[1]-t[5]:null;sl.addText(t[6],{x:x+.25,y:y+1.5,w:2.6,h:.35,fontSize:10.5,color:MUT,fontFace:FN});
+   sl.addText(dl==null?"":(dl>0?"▲ ":"▼ ")+Math.abs(dl).toFixed(t[2]==="n"?0:1)+(t[2]==="%"?" pts":"")+" vs "+(YR-1),{x:x+.25,y:y+1.85,w:2.6,h:.3,fontSize:11,color:"4A5B66",fontFace:FN})})}
+ // 3 global
+ prog("global update");
+ {const G=DATA.glob,sl=newSlide("Global polio update","Wild poliovirus type 1 (WPV1) cases, 2026 year to date. "+G.asof+".");
+  sl.addText("WPV1 cases",{x:.45,y:1.45,w:6,h:.35,fontSize:14,bold:true,color:INK,fontFace:FN});
+  sl.addTable([["Country","2026","2025 same period","2025 full year"].map((h,i)=>({text:h,options:{bold:true,color:"FFFFFF",fill:{color:AC},fontSize:12,fontFace:FN,align:i?"center":"left"}})),...G.wpv.map(r=>r.map((c,i)=>({text:String(c),options:{fontSize:13,fontFace:FN,align:i?"center":"left",bold:i===1&&r[1]>r[2],color:i===1&&r[1]>r[2]?"A93226":INK,fill:{color:r[0]==="Global"?"E4ECEA":"FFFFFF"}}})))],{x:.45,y:1.85,w:5.9,colW:[1.7,1.2,1.6,1.4],rowH:.42,border:{type:"solid",pt:.5,color:"CCD6D3"}});
+  sl.addText("Pakistan, 2026",{x:6.75,y:1.45,w:6,h:.35,fontSize:14,bold:true,color:INK,fontFace:FN});
+  sl.addTable([["Province","Cases","Districts"].map((h,i)=>({text:h,options:{bold:true,color:"FFFFFF",fill:{color:AC},fontSize:12,fontFace:FN,align:i===1?"center":"left"}})),...G.pk.map(r=>[r[0],String(r[1]),r[2]||"–"].map((c,i)=>({text:cut(c,i===2?46:30),options:{fontSize:11,fontFace:FN,align:i===1?"center":"left",bold:i===1&&+r[1]>0,color:i===1&&+r[1]>0?"A93226":INK,fill:{color:r[0].startsWith("Pakistan")?"E4ECEA":"FFFFFF"}}})))],{x:6.75,y:1.85,w:6.15,colW:[2.0,.8,3.35],rowH:.42,border:{type:"solid",pt:.5,color:"CCD6D3"}});
+  sl.addText("This week",{x:.45,y:4.55,w:12,h:.35,fontSize:14,bold:true,color:INK,fontFace:FN});
+  sl.addText(G.week,{x:.45,y:4.9,w:12.4,h:1.1,fontSize:12,color:"33434D",fontFace:FN,valign:"top"});
+  sl.addText(G.wpvnote||"",{x:.45,y:6.05,w:12.4,h:.9,fontSize:10.5,italic:true,color:MUT,fontFace:FN,valign:"top"})}
+ {const G=DATA.glob,sl=newSlide("Global polio update: cVDPV and environmental detections","Global cVDPV cases in 2026: "+G.cvt[0]+" ("+G.cvt[1]+" at the same point in 2025, "+G.cvt[2]+" in all of 2025).");
+  sl.addTable([["Country","Type","Cases 2026"].map((h,i)=>({text:h,options:{bold:true,color:"FFFFFF",fill:{color:AC},fontSize:12,fontFace:FN,align:i?"center":"left"}})),...G.cv.map(r=>r.map((c,i)=>({text:String(c),options:{fontSize:12,fontFace:FN,align:i?"center":"left",fill:{color:"FFFFFF"}}})))],{x:.45,y:1.5,w:5.6,colW:[2.4,1.6,1.6],rowH:.36,border:{type:"solid",pt:.5,color:"CCD6D3"}});
+  const P=G.pkes;if(P)sl.addTable([["Pakistan WPV1 environmental samples","Samples","Detail"].map((h,i)=>({text:h,options:{bold:true,color:"FFFFFF",fill:{color:AC},fontSize:11,fontFace:FN,align:i===1?"center":"left"}})),...P.rows.map(r=>[cut(r[0],44),r[1],cut(r[2],52)].map((c,i)=>({text:c,options:{fontSize:10.5,fontFace:FN,align:i===1?"center":"left",bold:i===1,color:i===1?"A93226":INK,fill:{color:"FFFFFF"}}})))],{x:6.4,y:1.5,w:6.5,colW:[2.6,.9,3.0],rowH:.55,border:{type:"solid",pt:.5,color:"CCD6D3"}});
+  P&&P.note&&sl.addText(P.note,{x:6.4,y:4.5,w:6.5,h:.8,fontSize:10.5,italic:true,color:MUT,fontFace:FN,valign:"top"})}
+ // 4 scorecard
+ prog("scorecard");
+ tableSlides("Indicator scorecard, "+YR,(di<0?"By district":"By tehsil")+". Green meets the benchmark, red does not.",[di<0?"District":"Tehsil","AFP cases","NPAFP cases","NPAFP rate","True AFP rate","GBS rate","Stool adequacy","Notified ≤ 7 d","Investigated ≤ 48 h","NPEV %","Sabin-like %","Specimens"],A.map(a=>{const r=ind(a,YR),c=(v,bm,f)=>({t:f(v),k:kk(v,bm)});return[a.n,f0(r.n),f0(r.np),c(r.npafp,3,f1),f1(r.tru),f1(r.gbs),c(r.adq,80,pc),c(r.n7,80,pc),c(r.i48,90,pc),c(r.evp,10,pc),pc(r.slp),f0(r.ts)]}),{boldLast:true,first:14});
+ // 5 trend
+ {const sl=newSlide("Trend by year, "+(tot.n.includes?tot.n:scope),"Same indicators for each year."+(pit?" Same period in every year.":""));
+  const rows=YS5.map(y=>{const r=ind(tot,y),c=(v,bm,f)=>({t:f(v),k:kk(v,bm)});return[String(y)+(y===CY()?" (to "+asof().toLocaleDateString("en-GB",{day:"numeric",month:"short"})+")":""),f0(r.n),c(r.npafp,3,f1),f1(r.tru),f1(r.gbs),c(r.adq,80,pc),c(r.n7,80,pc),c(r.i48,90,pc),c(r.evp,10,pc),pc(r.slp)]});
+  const head=["Year","AFP cases","NPAFP rate","True AFP rate","GBS rate","Stool adequacy","Notified ≤ 7 d","Investigated ≤ 48 h","NPEV %","Sabin-like %"],fs=11;
+  sl.addTable([head.map((h,i)=>({text:h,options:{bold:true,color:"FFFFFF",fill:{color:AC},fontSize:fs,fontFace:FN,align:i?"center":"left",valign:"middle"}})),...rows.map((r,ri)=>r.map((c,ci)=>{const kc=c&&c.k&&K[c.k];return{text:String(c&&c.t!=null?c.t:c),options:{fontSize:fs,fontFace:FN,align:ci?"center":"left",bold:!!kc,color:kc?kc[1]:INK,fill:{color:kc?kc[0]:ri%2?"F4F8F7":"FFFFFF"},valign:"middle"}}}))],{x:.45,y:1.5,w:12.4,colW:[2.2,1,1.1,1.1,1,1.2,1.2,1.4,1,1.2],rowH:[.5,.36,.36,.36,.36,.36],border:{type:"solid",pt:.5,color:"CCD6D3"}});
+  const vals=f=>YS5.map(y=>ind(tot,y)[f]);bar(sl,.45,4.0,6.1,3.0,"NPAFP rate per 100,000 under 15 (target ≥ 3)",YS5.map(String),[{n:"NPAFP rate",v:vals("npafp"),c:"0E6B62"}]);
+  bar(sl,6.75,4.0,6.1,3.0,"Stool adequacy % (target ≥ 80%)",YS5.map(String),[{n:"Stool adequacy",v:vals("adq"),c:"2E86C1"}],{max:100,dp:0,fmt:"0"})}
+ // 6 indicator charts
+ prog("indicator charts");
+ {const lab=A.map(a=>a.n.replace(" total","")),mk=(f,t,o)=>({f,t,o});
+  const sets=[[mk("npafp","NPAFP rate per 100,000 (target ≥ 3)",{}),mk("adq","Stool adequacy % (target ≥ 80%)",{max:100,dp:0,fmt:"0"}),mk("n7","Notified within 7 days % (target ≥ 80%)",{max:100,dp:0,fmt:"0"}),mk("i48","Investigated within 48 hours % (target ≥ 90%)",{max:100,dp:0,fmt:"0"})],[mk("evp","NPEV isolation % (target ≥ 10%)",{}),mk("slp","Sabin-like isolation %",{}),mk("tru","True AFP rate per 100,000 under 15",{}),mk("gbs","GBS rate per 100,000 under 15",{})]];
+  sets.forEach((set,si)=>{const sl=newSlide(si?"Indicator charts (2 of 2)":"Indicator charts (1 of 2)",scope+" by "+(di<0?"district":"tehsil")+" and year.");
+   set.forEach((c,i)=>bar(sl,.45+(i%2)*6.3,1.45+Math.floor(i/2)*2.8,6.15,2.75,c.t,lab,ys3.map(y=>({n:String(y),v:A.map(a=>ind(a,y)[c.f]),c:yc(y)})),Object.assign({cfs:lab.length>6?8:10,dfs:lab.length>6?7:9},c.o)))})}
+ // 7 EV/SL
+ prog("isolation");
+ {const rows=A.map(a=>{const r=ind(a,YR);return[a.n,f0(r.ts),f0(r.ev),{t:pc(r.evp),k:kk(r.evp,10)},f0(r.sl),pc(r.slp),f0(r.wp)]});
+  tableSlides("EV and SL isolation, "+YR,"Counted per stool specimen from AFP cases. NPEV benchmark ≥ 10%.",["Area","Specimens","NPEV","NPEV %","Sabin-like","Sabin-like %","WPV"],rows,{boldLast:true,first:16,per:14});}
+ // 8 epidemiology
+ prog("epidemiology");
+ {const sl=newSlide("Epidemiology, "+scope,"AFP cases by month of onset, age and sex.");
+  const mc=Y=>{const a=Array(12).fill(0);cs(Y,S.d,null).forEach(x=>{if(x[F.m]>=1)a[x[F.m]-1]++});return a};
+  bar(sl,.45,1.4,12.4,2.7,"AFP cases by month of onset",MN,ys3.map(y=>({n:String(y),v:mc(y),c:yc(y)})),{dp:0,fmt:"0",dfs:8,gap:40});
+  const ag=Y=>AG.map((_,i)=>cs(Y,S.d,null).filter(c=>c[F.ag]===i).length);
+  bar(sl,.45,4.2,7.6,2.8,"AFP cases by age group",AG,ys3.map(y=>({n:String(y),v:ag(y),c:yc(y)})),{dp:0,fmt:"0",dfs:8});
+  bar(sl,8.25,4.2,4.6,2.8,"Sex of AFP cases (%)",["Male","Female"],ys3.map(y=>{const c=cs(y,S.d,null),m=c.filter(x=>x[F.sx]===0).length;return{n:String(y),v:[c.length?m/c.length*100:0,c.length?(c.length-m)/c.length*100:0],c:yc(y)}}),{dp:0,fmt:"0",max:100})}
+ // 9 reporting network
+ {const sl=newSlide("Reporting network of notifying sites","Share of AFP cases notified by an active site, a zero-reporting site or a site outside the network.");
+  const cnt=(y,v)=>cs(y,S.d,null).filter(c=>c[F.nb]===v).length;
+  bar(sl,.45,1.45,6.2,5.4,"AFP cases by notifying site category",YS5.map(String),[[1,"Active site","1E8449"],[2,"Zero site","C98B3A"],[3,"Outside network","8A96A3"]].map(q=>({n:q[1],v:YS5.map(y=>cnt(y,q[0])),c:q[2]})),{stack:true,dp:0,fmt:"0",dfs:10});
+  const rows=YS5.map(y=>{const t=cs(y,S.d,null).length||1;return[String(y),String(t===1&&!cs(y,S.d,null).length?0:t),...[1,2,3].map(v=>cnt(y,v)+" ("+Math.round(cnt(y,v)/t*100)+"%)")]});
+  sl.addTable([["Year","Cases","Active site","Zero site","Outside network"].map((h,i)=>({text:h,options:{bold:true,color:"FFFFFF",fill:{color:AC},fontSize:12,fontFace:FN,align:i?"center":"left"}})),...rows.map((r,ri)=>r.map((c,i)=>({text:c,options:{fontSize:12,fontFace:FN,align:i?"center":"left",fill:{color:ri%2?"F4F8F7":"FFFFFF"}}})))],{x:6.9,y:1.6,w:5.95,colW:[.9,.9,1.45,1.3,1.4],rowH:.42,border:{type:"solid",pt:.5,color:"CCD6D3"}})}
+ // maps
+ prog("maps");
+ const U=GEO.uc,ids=U.map((u,i)=>i).filter(i=>!(GEO.x||[]).includes(i)).filter(i=>di<0||U[i][0]===di),idset=new Set(ids),TCl=i=>di<0?DC2[U[i][0]%5]:tcol(i);
+ const legendUnits=()=>{if(di<0)return DATA.D.map((d,k)=>[d,DC2[k%5]]);const m=new Map();ids.forEach(i=>{if(!m.has(U[i][1]))m.set(U[i][1],tcol(i))});return[...m.entries()].map(([t,c])=>[TC(t),c])};
+ function keyPanel(sl,x,rows,extra){let y=1.55;sl.addText("Key",{x,y,w:3.4,h:.35,fontSize:14,bold:true,color:INK,fontFace:FN});y+=.42;
+  rows.forEach(r=>{const shp=r.s==="c"?px.ShapeType.ellipse:r.s==="t"?px.ShapeType.triangle:px.ShapeType.diamond;sl.addShape(shp,{x:x+.02,y:y+.03,w:.24,h:.24,fill:{color:r.c},line:{color:"FFFFFF",width:.75}});sl.addText(r.t,{x:x+.4,y:y-.03,w:3.1,h:.36,fontSize:12,color:INK,fontFace:FN,valign:"middle"});y+=.4});
+  if(extra){y+=.1;sl.addText(extra.title,{x,y,w:3.4,h:.35,fontSize:14,bold:true,color:INK,fontFace:FN});y+=.4;extra.items.slice(0,14).forEach(it=>{sl.addShape(px.ShapeType.rect,{x:x+.02,y:y+.04,w:.24,h:.2,fill:{color:it[1].replace("#","")},line:{color:"8A96A3",width:.5}});sl.addText(it[0],{x:x+.4,y:y-.03,w:3.1,h:.32,fontSize:11,color:INK,fontFace:FN,valign:"middle"});y+=.32});}
+  return y}
+ const putMap=(sl,img)=>{const mx=.4,my=1.4,mw=8.9,mh=5.6,r=Math.min(mw/img.w,mh/img.h),w=img.w*r,h=img.h*r;sl.addImage({data:img.d,x:mx+(mw-w)/2,y:my+(mh-h)/2,w,h})};
+ const SH=["c","t","d"],YCOL=["D35400","1F4E9E","B0124B"],cases=GEO.cases.filter(c=>idset.has(c[0])),cnts=ys3.map(y=>cases.filter(c=>c[1]===y).length);
+ const spotMap=(years)=>mapCanvas(ids,{fill:TCl,ucLabels:di>=0,after:(g,P)=>{years.forEach(yi=>{cases.filter(c=>c[1]===ys3[yi]).forEach(c=>{const p=P(c[4],c[5]);mkr(g,SH[yi],p[0],p[1],di<0?4.6:6.2,"#"+YCOL[yi])})})}});
+ {const sl=newSlide(scope+": AFP case spot map, "+ys3[0]+" to "+ys3[2],"All years together. The next slides show one year at a time. Spots are placed inside the union council of residence (the line list has no GPS).");putMap(sl,spotMap([0,1,2]));
+  keyPanel(sl,9.55,ys3.map((y,i)=>({s:SH[i],c:YCOL[i],t:y+(y===CY()?"*":"")+": "+cnts[i]+" AFP cases"})),{title:di<0?"District colours":"Tehsil colours",items:legendUnits()});
+  sl.addText("* "+CY()+" to "+asof().toLocaleDateString("en-GB",{day:"numeric",month:"short"}),{x:9.55,y:6.65,w:3.4,h:.3,fontSize:9.5,italic:true,color:MUT,fontFace:FN})}
+ ys3.forEach((y,i)=>{const sl=newSlide(scope+": AFP case spot map, "+y+(y===CY()?" (to "+asof().toLocaleDateString("en-GB",{day:"numeric",month:"short"})+")":""),cnts[i]+" AFP cases in "+y+". Same map as the previous slide, one year at a time.");putMap(sl,spotMap([i]));
+  keyPanel(sl,9.55,[{s:SH[i],c:YCOL[i],t:y+": "+cnts[i]+" AFP cases"}],{title:di<0?"District colours":"Tehsil colours",items:legendUnits()})});
+ {const act=new Set(cases.filter(c=>c[1]===YR).map(c=>c[0])),sil=ids.filter(i=>!act.has(i));
+  const img=mapCanvas(ids,{fill:i=>act.has(i)?"#BFE3B4":"#F2A59B",ucLabels:true,labelIf:i=>!act.has(i)});
+  const sl=newSlide(scope+": silent union councils, "+YR,sil.length+" of "+ids.length+" UCs had no AFP case in "+YR+" (red). All other UCs are green.");putMap(sl,img);
+  keyPanel(sl,9.55,[],{title:"Legend",items:[["Silent UC ("+sil.length+")","#F2A59B"],["UC with at least one AFP case ("+(ids.length-sil.length)+")","#BFE3B4"]]});
+  if(sil.length){tableSlides("Silent union councils, "+YR,"UCs with no AFP case in "+YR+".",["UC","Tehsil","District","AFP cases "+(YR-1)],sil.map(i=>[TC(U[i][2]),TC(U[i][1]),DATA.D[U[i][0]],String(cases.filter(c=>c[0]===i&&c[1]===YR-1).length)]),{first:18})}}
+ // polio cases
+ {const CF=(DATA.cf||[]).filter(r=>di<0||DATA.D[di]===r[3]),gc=(GEO.cf||[]).filter(w=>idset.has(w[0])&&CF.some(r=>r[0]===w[1]));
+  if(CF.length){const cl=r=>r[1]==="Compatible"?"F39C12":"E02020";
+   const img=mapCanvas(ids,{fill:TCl,ucLabels:di>=0,after:(g,P)=>{gc.forEach(w=>{const r=CF.find(q=>q[0]===w[1]),p=P(w[2],w[3]);g.beginPath();g.arc(p[0],p[1],11,0,7);g.fillStyle="#"+cl(r);g.fill();g.lineWidth=2;g.strokeStyle="#fff";g.stroke();g.font="bold 11px Calibri,Arial,sans-serif";g.textAlign="center";g.fillStyle="#fff";g.fillText(String(r[0]),p[0],p[1]+4)})}});
+   const sl=newSlide(scope+": confirmed and compatible polio cases","Numbers match the case list on the next slides. "+CF.length+" case"+(CF.length===1?"":"s")+" recorded in the EDCS line list, 2019 to date.");putMap(sl,img);
+   keyPanel(sl,9.55,[{s:"c",c:"E02020",t:"Confirmed WPV1 ("+CF.filter(r=>r[1]==="WPV1").length+")"},{s:"c",c:"F39C12",t:"Polio compatible ("+CF.filter(r=>r[1]!=="WPV1").length+")"}],{title:di<0?"District colours":"Tehsil colours",items:legendUnits()});
+   const yrs=[2019,2020,2021,2022,2023,2024,2025,2026],dn=di<0?DATA.D.concat(["Division"]):[DATA.D[di]];
+   const rowsY=dn.map(d=>[d].concat(yrs.map(y=>{const q=CF.filter(r=>(d==="Division"||r[3]===d)&&r[2]===y),w=q.filter(r=>r[1]==="WPV1").length,k=q.length-w;return{t:w+(k?" + "+k+"C":""),k:w||k?"r":null}})));
+   tableSlides("Confirmed and compatible polio cases by year","Confirmed wild poliovirus (WPV1) cases by district and year of onset. C = polio-compatible case.",["District"].concat(yrs.map(String)),rowsY,{boldLast:di<0,first:14});
+   tableSlides("Polio case list","Confirmed (WPV1) and polio-compatible cases.",["#","Class","Year","District","Tehsil","UC","EPID","Onset","Age (m)","Sex","RI doses","SIA doses"],CF.slice().sort((a,b)=>a[0]-b[0]).map(r=>r.slice(0,12).map(String)),{fs:10,per:13})}}
+ // ES
+ prog("environmental surveillance");
+ {const E=DATA.ES,SI=E.sites.map((s,i)=>i).filter(i=>di<0||E.sites[i].d===di),rows=[];
+  SI.forEach(i=>ys3.forEach(yy=>{const rr=E.res.filter(r=>r[0]===i&&+r[1].slice(0,4)===yy&&(!pit||+r[1].slice(5,7)<=S.cm)),q=esStats(rr),l=rr.slice().sort((a,b)=>a[1]<b[1]?1:-1)[0];rows.push([E.sites[i].n.replace(/\b\w/g,c=>c).replace(/COMPOSITE /,""),DATA.D[E.sites[i].d],String(yy),String(q.n),{t:q.n?(q.ev/q.n*100).toFixed(1)+"%":"–",k:q.n?kk(q.ev/q.n*100,50):null},q.n?(q.sl/q.n*100).toFixed(1)+"%":"–",{t:String(q.wp),k:q.wp?"r":null},l?l[1]:"–"])}));
+  tableSlides("Environmental surveillance results by site and year",SI.length+" regular ES site"+(SI.length===1?"":"s")+". NPEV green means at least 50% of samples positive (ES sensitivity benchmark). Source: national ES results file, "+E.asof+".",["Site","District","Year","Samples","NPEV %","Sabin-like %","WPV1 positive","Last sample"],rows,{first:22,fs:10,per:15});
+  const pos=E.res.filter(r=>SI.includes(r[0])&&/WPV/i.test(r[2])&&r[1]>="2025-01").sort((a,b)=>b[1]<a[1]?-1:1);
+  tableSlides("WPV1 positive ES samples, 2025 to date",pos.length+" positive samples at the regular ES sites.",["Site","Month","Result"],pos.map(r=>[E.sites[r[0]].n,MN[+r[1].slice(5,7)-1]+" "+r[1].slice(0,4),r[2]]),{first:30,per:15})}
+ // ASV
+ prog("active site visits");
+ {const A2=DATA.ASV,ss=A2.sites.filter(s=>di<0||s.d===di),st=ss0=>{let due=0,met=0;ss0.forEach(s=>s.g.forEach(v=>{if(v!=null){due++;if(v>=1)met++}}));return{n:ss0.length,due,met,p:due?met/due*100:null}};
+  const grp=di<0?DATA.D.map((d,i)=>({n:d,f:s=>s.d===i})):[...new Set(ss.map(s=>s.t))].sort().map(t=>({n:TC(t),f:s=>s.t===t})),pcc=v=>({t:v==null?"–":v.toFixed(1)+"%",k:v==null?null:v>=90?"g":v>=75?"a":"r"});
+  const rows=grp.map(g=>{const q=["W","F","M"].map(f=>st(ss.filter(s=>s.f===f&&g.f(s)))),a=st(ss.filter(g.f));return[g.n,...q.flatMap(x=>[String(x.n),String(x.due),String(x.met),pcc(x.p)]),String(a.n),pcc(a.p)]});
+  const tq=["W","F","M"].map(f=>st(ss.filter(s=>s.f===f))),ta=st(ss);rows.push([scope+" total",...tq.flatMap(x=>[String(x.n),String(x.due),String(x.met),pcc(x.p)]),String(ta.n),pcc(ta.p)]);
+  tableSlides("Active site visits by frequency, 2026","A visit is counted when the site was visited at least once in the period it was due. Green is 90% or more, amber 75 to 89%, red below 75%.",[di<0?"District":"Tehsil","Weekly sites","Due","Visited","Weekly %","Fortnightly sites","Due","Visited","Fortnightly %","Monthly sites","Due","Visited","Monthly %","All sites","All %"],rows,{boldLast:true,first:14,fs:9});
+  const sl=newSlide("Share of sites visited by period, "+scope,"Each bar is the share of due sites that were visited in that period. Target 90%.");
+  [["W","Weekly sites: % visited per week",.45,1.45,12.4,2.7],["F","Fortnightly sites: % visited per fortnight",.45,4.25,6.1,2.7],["M","Monthly sites: % visited per month",6.75,4.25,6.1,2.7]].forEach(q=>{const f=q[0],L=A2.lastp[f]+1,lab=[],val=[];for(let i=0;i<L;i++){let due=0,met=0;ss.filter(s=>s.f===f).forEach(s=>{const v=s.g[i];if(v!=null){due++;if(v>=1)met++}});lab.push(f==="W"?String(i+1):plab(f,i));val.push(due?met/due*100:0)}
+   bar(sl,q[2],q[3],q[4],q[5],q[1],lab,[{n:"% visited",v:val,c:"1F8A70"}],{max:100,dp:0,fmt:"0",dfs:f==="W"?6:9,cfs:f==="W"?7:9,gap:30})});
+  const bad=ss.map(s=>{const due=s.g.filter(v=>v!=null).length,met=s.g.filter(v=>v>=1).length,miss=s.g.map((v,i)=>v===0?plab(s.f,i).replace("Wk ",""):null).filter(Boolean);return{s,due,met,miss,p:due?met/due*100:null}}).filter(x=>x.p!=null&&x.p<90).sort((a,b)=>a.p-b.p);
+  tableSlides("Sites below 90%",bad.length+" of "+ss.length+" active sites. Missed periods are listed.",["Site","UC","District","Frequency","Due","Visited","%","Missed"],bad.map(x=>[x.s.n,TC(x.s.u),DATA.D[x.s.d],FQ[x.s.f],String(x.due),String(x.met),pcc(x.p),x.miss.join(", ")||"–"]),{first:24,fs:9,per:14,maxw:34})}
+ // zero sites
+ {const Z=GEO.hf.filter(h=>h[2]==="Z"&&idset.has(h[0])),sl=newSlide("Zero-reporting sites","Derived from the line list: zero-reporting sites that notified an AFP case, 2022 to date, grouped by UC and sector. Not the full zero-reporting network (no site list supplied).");
+  const dd=di<0?DATA.D.map((d,i)=>[d,i]):[[DATA.D[di],di]],rows=dd.map(([d,i])=>{const q=Z.filter(h=>U[h[0]][0]===i),c=s=>q.filter(h=>h[3]===s).length;return[d,String(c("Gov")),String(c("Pri")),String(c("Arm")),String(q.length)]});
+  if(di<0)rows.push(["Division",...["Gov","Pri","Arm"].map(s=>String(Z.filter(h=>h[3]===s).length)),String(Z.length)]);
+  sl.addTable([["District","Government","Private","Armed forces","Total"].map((h,i)=>({text:h,options:{bold:true,color:"FFFFFF",fill:{color:AC},fontSize:13,fontFace:FN,align:i?"center":"left"}})),...rows.map((r,ri)=>r.map((c,i)=>({text:c,options:{fontSize:13,fontFace:FN,align:i?"center":"left",bold:di<0&&ri===rows.length-1,fill:{color:ri%2?"F4F8F7":"FFFFFF"}}})))],{x:2.2,y:1.9,w:8.9,colW:[2.7,1.6,1.5,1.6,1.5],rowH:.5,border:{type:"solid",pt:.5,color:"CCD6D3"}});
+  if(Z.length){const img=mapCanvas(ids,{fill:TCl,ucLabels:di>=0,after:(g,P)=>{Z.forEach(h=>{const p=P(h[5],h[6]);mkr(g,"d",p[0],p[1],6,h[3]==="Gov"?"#1E8449":h[3]==="Arm"?"#2E86C1":"#D68910")})}});const s2=newSlide(scope+": zero-reporting sites, map","Each marker is a UC and sector where a zero-reporting site notified an AFP case.");putMap(s2,img);keyPanel(s2,9.55,[{s:"d",c:"1E8449",t:"Government ("+Z.filter(h=>h[3]==="Gov").length+")"},{s:"d",c:"D68910",t:"Private ("+Z.filter(h=>h[3]==="Pri").length+")"},{s:"d",c:"2E86C1",t:"Armed forces ("+Z.filter(h=>h[3]==="Arm").length+")"}],{title:di<0?"District colours":"Tehsil colours",items:legendUnits()})}}
+ // notes
+ {const sl=newSlide("Data notes","What the underlying data does and does not contain.");
+  const it=["AFP cases and lab results: EDCS line list, onset 2022 to date, placed in a union council by UC code, then UC name.","Population: under-15 population is estimated from the campaign under-5 target (under 5 = 17%, under 15 = 45% of population), so NPAFP, true AFP and GBS rates are estimates.","Spot maps: the line list has no case coordinates, so case and site spots are placed inside the union council.","Laboratory: isolation is per AFP case from the final result in the line list. Contact specimens were not supplied.","Environmental surveillance: regular sites from the reviewed June 2026 ES site list; results from the national ES file.","Active site visits: the 57 assigned active sites against the 26 Nov 2026 visit export, complete periods only.","Benchmarks: NPAFP 3 per 100,000, stool adequacy 80%, notified within 7 days 80%, investigated within 48 hours 90%, NPEV isolation 10%."];
+  sl.addText(it.map(t=>({text:t,options:{bullet:true,breakLine:true}})),{x:.6,y:1.5,w:12.1,h:5.3,fontSize:15,color:INK,fontFace:FN,valign:"top",paraSpaceAfter:8})}
+ return await px.write({outputType:"uint8array"})}
+
 function pPpt(){const L=[["ALL","Bannu Division"]].concat(DATA.D.map((n,i)=>[["BANNU","LAKKI","WAZIRN"][i],n]));return basisBox()+card("Surveillance presentation","One deck per area: global polio update, scorecards, indicator trends, same-period comparison, EV and SL isolation, epidemiology with contact analysis, AFP cases by UC and spot maps, silent UCs, environmental surveillance, and the active and zero-site network. The deck follows the indicator basis chosen above. Data to "+asof().toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})+".",`<div class="svpp">${L.map(x=>`<button type="button" class="svdl" data-a="${x[0]}" data-n="${esc(x[1])}">${esc(x[1])}<small>Download PPT (${S.pit?"point-in-time":"annualised"})</small></button>`).join("")}</div><p class="svs" id="svpm" role="status"></p>`)}
 function pNotes(){return card("Data notes for Bannu Division","What the underlying data does and does not contain",`<ul class="svn"><li><b>AFP cases and lab results.</b> EDCS line list for the three districts, onset 2022 to date. Cases are placed in a union council by UC code, then by UC name.</li><li><b>Population.</b> Under-15 population is estimated from the campaign target of children under five (under five = 17% of population, under 15 = 45%), so NPAFP, true AFP and GBS rates are estimates.</li><li><b>Spot maps.</b> The line list has no case coordinates, so case and active site spots are placed at random inside the union council.</li><li><b>Laboratory.</b> Isolation is counted per AFP case from the final result in the line list. Contact specimens are not in the data supplied.</li><li><b>Environmental surveillance.</b> Five regular sites from the reviewed June 2026 site list; other sampling sites are listed under other ES sampling.</li><li><b>Active site visits.</b> 57 assigned active sites checked against the 26 Nov 2026 visit export, complete weeks to week 46, fortnights to weeks 45-46 and months to October.</li><li><b>Zero-reporting sites.</b> No site list supplied. The zero site pages show zero-reporting sites that notified an AFP case, derived from the line list (grouped by UC and sector, positions at random inside the UC).</li><li><b>Global update.</b> GPEI update of 25 Nov 2026 for Pakistan and cVDPV countries; Afghanistan and global WPV1 as of 4 Nov 2026.</li></ul>`)+card("How the indicators are calculated","",`<ul class="svn"><li><b>NPAFP rate.</b> AFP cases with final classification 3 (non-polio AFP), per 100,000 children under 15. The current year is annualised: cases to date \u00d7 365 \u00f7 days elapsed. Benchmark 3 per 100,000.</li><li><b>True AFP rate.</b> Cases whose provisional diagnosis is G61.0, G37.3, B34.1 or T80, per 100,000 children under 15.</li><li><b>GBS rate.</b> Provisional diagnosis G61 or GBS, per 100,000 under 15.</li><li><b>Stool adequacy.</b> AFP cases marked ADEQ, % of cases with an adequacy recorded. Benchmark 80%.</li><li><b>Notified within 7 days.</b> Date of notification minus date of onset is 0 to 7 days. Benchmark 80%.</li><li><b>Investigated within 48 hours.</b> Date of investigation minus date of notification is 0 to 2 days. Benchmark 90%.</li><li><b>NPEV and Sabin-like isolation.</b> Counted per stool specimen from the lab file (AFP cases and contacts). NPEV = enterovirus result 1. Sabin-like = poliovirus type 1, 2 or 3 result 2. Benchmark for NPEV 10%.</li><li><b>Environmental surveillance.</b> Results of ES samples from the regular ES sites in the national ES file (Hinjal and Noorabad, Muslim Abad Sokari, Tube Well Gali, Nala Serai Naurang and Miran Shah Town). A sample is NPEV positive when NPEV was isolated, Sabin-like positive when any Sabin-like poliovirus was isolated. ES NPEV benchmark: at least 50% of samples.</li><li><b>Active site visits.</b> Weekly, fortnightly and monthly active sites are checked against the 2026 visit trackers. A visit is met when the site was visited at least once in the period it was due. Green is 90% or more.</li><li><b>Population.</b> Under-15 population by district and tehsil from the indicator workbook. District totals use the district figures, tehsil rows use the tehsil figures.</li><li><b>Dates.</b> Cases are grouped by year and month of paralysis onset. Data is as of ${asof().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}, the latest entry in the AFP file.</li></ul>`)+card("Data sources","",`<p class="svs">EDCS AFP line list (Khyber Pakhtunkhwa), filtered to Bannu, Lakki Marwat and Wazir-N (North Waziristan), onset 2022 to 2026, the national ES results file, the reviewed ES site list (June 2026) and the 2026 active site visit trackers. No names, addresses or exact dates of birth are held in this dashboard.</p>`)}
 
