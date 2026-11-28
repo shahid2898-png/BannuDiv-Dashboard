@@ -86,13 +86,14 @@ aside.rail .rail-foot b{color:#1f2937}
 .hm{background:linear-gradient(180deg,#EAF2FC 0,#F4F8FD 60%,#EEF4FB 100%);color:#12243A}
 .hm-hd{position:relative;background:linear-gradient(100deg,#071F46 0,#0A2F63 55%,#10407F 100%);color:#fff;overflow:hidden;padding:max(18px,3vh) max(20px,env(safe-area-inset-right,0px)) 40px max(20px,env(safe-area-inset-left,0px))}
 .hm-hd:after{content:"";position:absolute;left:-5%;right:-5%;bottom:-26px;height:46px;border-radius:50%;background:#EEF4FB;box-shadow:0 -4px 0 #3FA9F0}
+@media(min-width:1000px){.hm-row{flex-wrap:nowrap;max-width:none;margin:0}.hm-pill{flex:none}}
 .hm-row{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:22px;position:relative;z-index:2;flex-wrap:wrap}
 .hm-brand{display:flex;align-items:center;gap:16px}.hm-brand svg{width:56px;height:56px;flex:none}
 .hm-brand i{width:1px;height:46px;background:rgba(255,255,255,.3);display:block}
-.hm-brand h1{margin:0;font-family:var(--display);font-size:clamp(24px,3.4vw,38px);line-height:1.1;color:#fff;font-weight:800}.hm-brand h1 em{font-style:normal;color:#35B6F5}
-.hm-pill{display:flex;align-items:center;gap:12px;border:1.5px solid #3FA9F0;border-radius:18px;padding:10px 18px;background:rgba(15,60,120,.55)}.hm-pill svg{width:44px;height:44px;flex:none}
+.hm-brand h1{margin:0;font-family:var(--display);font-size:clamp(20px,2.3vw,32px);line-height:1.1;color:#fff;font-weight:800}.hm-brand h1 em{font-style:normal;color:#35B6F5}
+.hm-pill{display:flex;align-items:center;gap:10px;border:1.5px solid #3FA9F0;border-radius:18px;padding:8px 16px;background:rgba(15,60,120,.55)}.hm-pill svg{width:44px;height:44px;flex:none}
 .hm-pill b{display:block;font-size:20px;line-height:1.1}.hm-pill span{display:block;font-size:14px;color:#DCE9F8;margin-top:3px;white-space:nowrap}.hm-pill span u{text-decoration:none;opacity:.5;margin:0 7px}
-.hm-art{position:absolute;right:0;top:0;height:100%;width:min(38%,520px);z-index:1;opacity:.95;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 38%);mask-image:linear-gradient(90deg,transparent 0,#000 38%)}
+.hm-art{position:absolute;right:0;top:0;height:calc(100% - 4px);width:auto;max-width:30%;object-fit:cover;object-position:left center;z-index:1;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30%);mask-image:linear-gradient(90deg,transparent 0,#000 30%)}
 .hm-sub{background:#0A2A58;color:#fff;border-bottom:3px solid #3FA9F0;padding:12px max(20px,env(safe-area-inset-right,0px)) 14px max(20px,env(safe-area-inset-left,0px))}.hm-sub>div{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:15px}
 .hm-sub svg{width:24px;height:24px;flex:none}.hm-sub b{font-size:18px}.hm-sub b u{text-decoration:none;color:#9CB3D1;margin:0 8px}.hm-sub span{border-left:1px solid rgba(255,255,255,.3);padding-left:16px;color:#E5EEFA}
 .hm-grid{max-width:1180px;margin:0 auto;padding:30px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:30px}
@@ -114,7 +115,7 @@ aside.rail .rail-foot b{color:#1f2937}
 </head>
 <body>
 <div class="hm" id="home" hidden>
-  <header class="hm-hd"><svg class="hm-art" viewBox="0 0 520 150" preserveAspectRatio="xMaxYMid slice" aria-hidden="true"><defs><linearGradient id="hma" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0A2F63" stop-opacity="1"/><stop offset="1" stop-color="#0A2F63" stop-opacity="0"/></linearGradient></defs><path d="M0 150V92l60-48 44 34 70-62 90 74 60-40 96 60v40z" fill="#4E7FB6"/><path d="M140 150V100l50-46 70 60 50-30 110 66z" fill="#78A3D1"/><path d="M0 150V112l90-30 70 38 90-26 120 40 150-20v36z" fill="#2E5C8F" opacity=".9"/><g fill="#C9B79A" stroke="#8F7C5E" stroke-width="1"><rect x="290" y="82" width="190" height="50"/><rect x="298" y="68" width="20" height="16"/><rect x="340" y="62" width="22" height="22"/><rect x="392" y="66" width="22" height="18"/><rect x="448" y="60" width="24" height="24"/></g><g fill="#8F7C5E"><path d="M304 132v-18a8 8 0 0 1 16 0v18zM334 132v-18a8 8 0 0 1 16 0v18zM364 132v-18a8 8 0 0 1 16 0v18zM394 132v-18a8 8 0 0 1 16 0v18zM424 132v-18a8 8 0 0 1 16 0v18z"/></g><path d="M0 150v-22c60 14 160 6 260-6l260 20v8z" fill="#5BA13A"/><path d="M466 60V8" stroke="#E5E9EE" stroke-width="2"/><path d="M467 9h30v20h-30z" fill="#0F6B3A"/></svg><div class="hm-row">
+  <header class="hm-hd"><img class="hm-art" src="assets/hm-fort.jpg" alt="" aria-hidden="true"><div class="hm-row">
     <div class="hm-brand"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="18" fill="#1d7be0"/><path d="M18 8.5c-3.3 4.4-6.2 7.7-6.2 11.2a6.2 6.2 0 0 0 12.4 0c0-3.5-2.9-6.8-6.2-11.2z" fill="#fff"/></svg><i></i><h1>Bannu Division <em>&ndash; Khyber Pakhtunkhwa</em></h1></div>
     <div class="hm-pill"><svg viewBox="0 0 48 48" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 4l16 6v12c0 11-7 18-16 22C15 40 8 33 8 22V10z"/><path d="M30 14l4 4M27 17l4 4M18 30l10-10 4 4-10 10-5 1zM14 36l4-4"/></svg><div><b>Polio Eradication</b><span>SIAs<u>|</u>Surveillance<u>|</u>Monitoring</span></div></div>
   </div></header>
