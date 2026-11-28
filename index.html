@@ -82,7 +82,7 @@ aside.rail .rail-foot b{color:#1f2937}
 
 /* ---- Main page (Campaigns / Surveillance) + surveillance module token aliases ---- */
 :root{--ink2:var(--ink-2);--line2:var(--line-2);--surface2:var(--surface-2)}
-.hm{position:fixed;inset:0;z-index:60;overflow:auto;background:var(--ground);color:var(--ink);font-family:var(--body)}.hm[hidden]{display:none}html.svlock,html.svlock body{overflow:hidden!important}
+.hm{position:fixed;inset:0;z-index:60;overflow-x:hidden;overflow-y:auto;background:var(--ground);color:var(--ink);font-family:var(--body)}.hm[hidden]{display:none}html.svlock,html.svlock body{overflow:hidden!important}
 .hm{background:linear-gradient(180deg,#EAF2FC 0,#F4F8FD 60%,#EEF4FB 100%);color:#12243A}
 .hm-hd{position:relative;background:linear-gradient(100deg,#071F46 0,#0A2F63 55%,#10407F 100%);color:#fff;overflow:hidden;padding:max(18px,3vh) max(20px,env(safe-area-inset-right,0px)) 40px max(20px,env(safe-area-inset-left,0px))}
 .hm-hd:after{content:"";position:absolute;left:-5%;right:-5%;bottom:-26px;height:46px;border-radius:50%;background:#EEF4FB;box-shadow:0 -4px 0 #3FA9F0}
@@ -1229,8 +1229,9 @@ sync();setTimeout(sync,300);
 const hm=document.getElementById("home");
 function note(m){try{if(typeof toast==="function")toast(m)}catch(e){}}
 function loadSv(h){if(window.SV){SV.open(h);return}if(window.__svl)return;window.__svl=1;const s=document.createElement("script");s.src="surv/surv.js";s.onload=()=>SV.open(h);s.onerror=()=>{window.__svl=0;note("Could not load the surveillance module")};document.head.appendChild(s)}
-function svRoute(){const hh=(location.hash||"").slice(1);document.documentElement.classList.toggle("svlock",hh.slice(0,2)==="sv");
- if(!hh||hh==="home"){if(window.SV)SV.close();hm.hidden=false;document.title="Bannu Division Polio Monitor";return}
+function hmFit(){hm.style.zoom="";if(innerWidth<700||hm.hidden)return;const h=hm.scrollHeight;if(h>innerHeight)hm.style.zoom=Math.max(.5,innerHeight/h).toFixed(3)}addEventListener("resize",()=>{if(!hm.hidden)hmFit()});
+function svRoute(){const hh=(location.hash||"").slice(1);document.documentElement.classList.toggle("svlock",hh.slice(0,2)==="sv"||!hh||hh==="home");
+ if(!hh||hh==="home"){if(window.SV)SV.close();hm.hidden=false;hmFit();document.title="Bannu Division Polio Monitor";return}
  if(hh.slice(0,2)==="sv"){hm.hidden=true;loadSv(hh);return}
  hm.hidden=true;if(window.SV)SV.close()}
 addEventListener("hashchange",svRoute);svRoute();
